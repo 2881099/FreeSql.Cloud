@@ -43,7 +43,7 @@ fsql.Change("db3").Select<T>();
 ## TCC 事务
 
 ```c#
- var tid = Guid.NewGuid().ToString();
+var tid = Guid.NewGuid().ToString();
 await fsql.StartTcc(tid)
     .Then(typeof(Tcc1), "db1", new TccState { Id = 1, Name = "tcc1" })
     .Then(typeof(Tcc2), "db2")
