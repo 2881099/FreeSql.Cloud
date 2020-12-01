@@ -7,10 +7,17 @@
 ```c#
 var fsql = new FreeSqlCloud())
 
-fsql.Register("db1", () => new FreeSqlBuilder().UseConnectionString(FreeSql.DataType.Sqlite, @"Data Source=db1.db").Build());
-fsql.Register("db2", () => new FreeSqlBuilder().UseConnectionString(FreeSql.DataType.Sqlite, @"Data Source=db2.db").Build());
-fsql.Register("db3", () => new FreeSqlBuilder().UseConnectionString(FreeSql.DataType.Sqlite, @"Data Source=db3.db").Build());
+fsql.Register("db1", () => new FreeSqlBuilder()
+    .UseConnectionString(FreeSql.DataType.Sqlite, @"Data Source=db1.db")
+    .Build());
 
+fsql.Register("db2", () => new FreeSqlBuilder()
+    .UseConnectionString(FreeSql.DataType.Sqlite, @"Data Source=db2.db")
+    .Build());
+
+fsql.Register("db3", () => new FreeSqlBuilder()
+    .UseConnectionString(FreeSql.DataType.Sqlite, @"Data Source=db3.db")
+    .Build());
 ```
 
 ## 如何使用？
