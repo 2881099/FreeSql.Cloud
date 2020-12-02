@@ -1,5 +1,6 @@
 ﻿using FreeSql;
 using System;
+using System.ComponentModel;
 using System.Threading.Tasks;
 
 namespace ConsoleApp1
@@ -29,35 +30,36 @@ namespace ConsoleApp1
                 //{
 
                 //TCC
-                //var tid = Guid.NewGuid().ToString();
-                //await fsql
-                //    .StartTcc(tid, "创建订单")
-                //    .Then<Tcc1>(DbEnum.db1)
-                //    .Then<Tcc2>(DbEnum.db2)
-                //    .Then<Tcc3>(DbEnum.db3)
-                //    .ExecuteAsync();
-
-                //tid = Guid.NewGuid().ToString();
-                //await fsql.StartTcc(tid, "支付购买", new TccOptions
-                //{
-                //    MaxRetryCount = 10,
-                //    RetryInterval = TimeSpan.FromSeconds(10)
-                //})
-                //.Then<Tcc1>(DbEnum.db1, new LocalState { Id = 1, Name = "tcc1" })
-                //.Then<Tcc2>(DbEnum.db2)
-                //.Then<Tcc3>(DbEnum.db3, new LocalState { Id = 3, Name = "tcc3" })
-                //.ExecuteAsync();
-
-                // Saga
-                //tid = Guid.NewGuid().ToString();
-                //await fsql
-                //    .StartSaga(tid, "注册用户")
-                //    .Then<Saga1>(DbEnum.db1)
-                //    .Then<Saga2>(DbEnum.db2)
-                //    .Then<Saga3>(DbEnum.db3)
-                //    .ExecuteAsync();
-
                 var tid = Guid.NewGuid().ToString();
+                await fsql
+                    .StartTcc(tid, "创建订单")
+                    .Then<Tcc1>(DbEnum.db1)
+                    .Then<Tcc2>(DbEnum.db2)
+                    .Then<Tcc3>(DbEnum.db3)
+                    .ExecuteAsync();
+
+                tid = Guid.NewGuid().ToString();
+                await fsql.StartTcc(tid, "支付购买", 
+                    new TccOptions
+                    {
+                        MaxRetryCount = 10,
+                        RetryInterval = TimeSpan.FromSeconds(10)
+                    })
+                .Then<Tcc1>(DbEnum.db1, new LocalState { Id = 1, Name = "tcc1" })
+                .Then<Tcc2>(DbEnum.db2)
+                .Then<Tcc3>(DbEnum.db3, new LocalState { Id = 3, Name = "tcc3" })
+                .ExecuteAsync();
+
+                //Saga
+                tid = Guid.NewGuid().ToString();
+                await fsql
+                    .StartSaga(tid, "注册用户")
+                    .Then<Saga1>(DbEnum.db1)
+                    .Then<Saga2>(DbEnum.db2)
+                    .Then<Saga3>(DbEnum.db3)
+                    .ExecuteAsync();
+
+                tid = Guid.NewGuid().ToString();
                 await fsql.StartSaga(tid, "发表评论",
                     new SagaOptions
                     {
@@ -80,6 +82,7 @@ namespace ConsoleApp1
         public string Name { get; set; }
     }
 
+    [Description("第1步")]
     class Tcc1 : TccUnit<LocalState>
     {
         public override void Cancel()
@@ -93,7 +96,7 @@ namespace ConsoleApp1
         {
         }
     }
-
+    [Description("第2步")]
     class Tcc2 : TccUnit<LocalState>
     {
         public override void Cancel()
@@ -106,7 +109,7 @@ namespace ConsoleApp1
         {
         }
     }
-
+    [Description("第3步")]
     class Tcc3 : TccUnit<LocalState>
     {
         public override void Cancel()
@@ -121,6 +124,7 @@ namespace ConsoleApp1
         }
     }
 
+    [Description("第1步")]
     class Saga1 : SagaUnit<LocalState>
     {
         public override void Cancel()
@@ -131,7 +135,7 @@ namespace ConsoleApp1
         {
         }
     }
-
+    [Description("第2步")]
     class Saga2 : SagaUnit<LocalState>
     {
         public override void Cancel()
@@ -141,7 +145,7 @@ namespace ConsoleApp1
         {
         }
     }
-
+    [Description("第3步")]
     class Saga3 : SagaUnit<LocalState>
     {
         public override void Cancel()

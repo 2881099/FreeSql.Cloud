@@ -6,7 +6,7 @@ namespace FreeSql
 {
     public class TccOptions
     {
-        public int MaxRetryCount { get; set; } = 30;
+        public int MaxRetryCount { get; set; } = 10;
         public TimeSpan RetryInterval { get; set; } = TimeSpan.FromSeconds(60);
     }
 

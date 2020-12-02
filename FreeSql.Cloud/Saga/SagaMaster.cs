@@ -54,7 +54,7 @@ namespace FreeSql.Cloud.Saga
             {
                 DbKey = dbkey.ToInvariantCultureToString(),
                 Description = unitTypeConved.GetCustomAttribute<DescriptionAttribute>()?.Description,
-                Index = _thenUnitInfos.Count,
+                Index = _thenUnitInfos.Count + 1,
                 IsolationLevel = isolationLevel,
                 Stage = SagaUnitStage.Commit,
                 State = state == null ? null : Newtonsoft.Json.JsonConvert.SerializeObject(state),
@@ -65,7 +65,14 @@ namespace FreeSql.Cloud.Saga
             return this;
         }
 
-        async public Task<bool> ExecuteAsync()
+        /// <summary>
+        /// 执行 SAGA 事务<para></para>
+        /// 返回值 true: 事务完成并且 Commit 成功<para></para>
+        /// 返回值 false: 事务完成但是 Cancel 已取消<para></para>
+        /// 返回值 null: 等待最终一致性
+        /// </summary>
+        /// <returns></returns>
+        async public Task<bool?> ExecuteAsync()
         {
             if (_cloud._ib.Quantity == 0) throw new ArgumentException($"必须注册可用的数据库");
             var units = _thenUnits.ToArray();
@@ -166,7 +173,7 @@ namespace FreeSql.Cloud.Saga
             var unitInfos = unitOrms.Distinct().SelectMany(z => z.Select<SagaUnitInfo>().Where(a => a.Tid == tid).ToList()).OrderBy(a => a.Index).ToList();
             await CancelAsync(cloud, masterInfo, unitInfos, units, unitOrms, retry);
         }
-        async static Task<bool> CancelAsync(FreeSqlCloud<TDBKey> cloud, SagaMasterInfo masterInfo, List<SagaUnitInfo> unitInfos, ISagaUnit[] units, IFreeSql[] unitOrms, bool retry)
+        async static Task<bool?> CancelAsync(FreeSqlCloud<TDBKey> cloud, SagaMasterInfo masterInfo, List<SagaUnitInfo> unitInfos, ISagaUnit[] units, IFreeSql[] unitOrms, bool retry)
         {
             var isCommited = unitInfos.Count == masterInfo.Total;
             var isCanceled = false;
@@ -175,7 +182,7 @@ namespace FreeSql.Cloud.Saga
                 var cancelCount = 0;
                 for (var idx = units.Length - 1; idx >= 0; idx--)
                 {
-                    var unitInfo = unitInfos.Where(tt => tt.Index == idx && tt.Stage == SagaUnitStage.Commit).FirstOrDefault();
+                    var unitInfo = unitInfos.Where(tt => tt.Index == idx + 1 && tt.Stage == SagaUnitStage.Commit).FirstOrDefault();
                     try
                     {
                         if (unitInfo != null)
@@ -192,7 +199,7 @@ namespace FreeSql.Cloud.Saga
                                     (units[idx] as ISagaUnitSetter)?.SetTransaction(tran).SetOrm(fsql).SetUnit(unitInfo);
 
                                     var affrows = await fsql.Update<SagaUnitInfo>()
-                                        .Where(a => a.Tid == masterInfo.Tid && a.Index == idx && a.Stage == SagaUnitStage.Commit)
+                                        .Where(a => a.Tid == masterInfo.Tid && a.Index == idx + 1 && a.Stage == SagaUnitStage.Commit)
                                         .Set(a => a.Stage, SagaUnitStage.Cancel)
                                         .ExecuteAffrowsAsync();
                                     if (affrows == 1)
@@ -228,7 +235,7 @@ namespace FreeSql.Cloud.Saga
                     .Set(a => a.FinishTime == DateTime.UtcNow)
                     .ExecuteAffrowsAsync();
                 if (cloud._distributeTraceEnable) cloud._distributedTraceCall($"SAGA({masterInfo.Tid}, {masterInfo.Title}) End {(isCommited ? "commited" : "canceled")},{(masterInfo.RetryCount > 0 ? $" retry again {masterInfo.RetryCount} times" : "")} {(isCommited ? "COMMIT" : "CANCEL")} successful");
-                return true;
+                return isCommited;
             }
             else
             {
@@ -247,9 +254,13 @@ namespace FreeSql.Cloud.Saga
                 }
                 else
                 {
+                    await cloud._ormMaster.Update<SagaMasterInfo>()
+                        .Where(a => a.Tid == masterInfo.Tid && a.Status == SagaMasterStatus.Pending)
+                        .Set(a => a.Status, SagaMasterStatus.ManualOperation)
+                        .ExecuteAffrowsAsync();
                     if (cloud._distributeTraceEnable) cloud._distributedTraceCall($"SAGA({masterInfo.Tid}, {masterInfo.Title}) Not completed, waiting for manual operation 【人工干预】");
                 }
-                return false;
+                return null;
             }
         }
         internal static Action GetTempTask(FreeSqlCloud<TDBKey> cloud, string tid, string title, int retryInterval)

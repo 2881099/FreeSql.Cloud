@@ -54,7 +54,7 @@ namespace FreeSql.Cloud.Tcc
             {
                 DbKey = dbkey.ToInvariantCultureToString(),
                 Description = unitTypeConved.GetCustomAttribute<DescriptionAttribute>()?.Description,
-                Index = _thenUnitInfos.Count,
+                Index = _thenUnitInfos.Count + 1,
                 IsolationLevel = isolationLevel,
                 Stage = TccUnitStage.Try,
                 State = state == null ? null : Newtonsoft.Json.JsonConvert.SerializeObject(state),
@@ -65,7 +65,14 @@ namespace FreeSql.Cloud.Tcc
             return this;
         }
 
-        async public Task<bool> ExecuteAsync()
+        /// <summary>
+        /// 执行 TCC 事务<para></para>
+        /// 返回值 true: 事务完成并且 Confirm 成功<para></para>
+        /// 返回值 false: 事务完成但是 Cancel 已取消<para></para>
+        /// 返回值 null: 等待最终一致性
+        /// </summary>
+        /// <returns></returns>
+        async public Task<bool?> ExecuteAsync()
         {
             if (_cloud._ib.Quantity == 0) throw new ArgumentException($"必须注册可用的数据库");
             var units = _thenUnits.ToArray();
@@ -83,7 +90,7 @@ namespace FreeSql.Cloud.Tcc
                 RetryInterval = (int)_options.RetryInterval.TotalSeconds,
             };
             await _cloud._ormMaster.Insert(masterInfo).ExecuteAffrowsAsync();
-            if (_cloud._distributeTraceEnable) _cloud._distributedTraceCall($"TCC({masterInfo.Tid}, {masterInfo.Title}) Created successful, retry count: {_options.MaxRetryCount}, interval: {_options.RetryInterval.TotalSeconds}S");
+            if (_cloud._distributeTraceEnable) _cloud._distributedTraceCall($"TCC ({masterInfo.Tid}, {masterInfo.Title}) Created successful, retry count: {_options.MaxRetryCount}, interval: {_options.RetryInterval.TotalSeconds}S");
             var unitInfos = new List<TccUnitInfo>();
 
             Exception unitException = null;
@@ -112,12 +119,12 @@ namespace FreeSql.Cloud.Tcc
                                 tran.Rollback();
                         }
                     }
-                    if (_cloud._distributeTraceEnable) _cloud._distributedTraceCall($"TCC({masterInfo.Tid}, {masterInfo.Title}) Unit{_thenUnitInfos[idx].Index}{(string.IsNullOrWhiteSpace(_thenUnitInfos[idx].Description) ? "" : $"({_thenUnitInfos[idx].Description})")} TRY successful\r\n    State: {_thenUnitInfos[idx].State}\r\n    Type:  {_thenUnitInfos[idx].TypeName}");
+                    if (_cloud._distributeTraceEnable) _cloud._distributedTraceCall($"TCC ({masterInfo.Tid}, {masterInfo.Title}) Unit{_thenUnitInfos[idx].Index}{(string.IsNullOrWhiteSpace(_thenUnitInfos[idx].Description) ? "" : $"({_thenUnitInfos[idx].Description})")} TRY successful\r\n    State: {_thenUnitInfos[idx].State}\r\n    Type:  {_thenUnitInfos[idx].TypeName}");
                 }
                 catch (Exception ex)
                 {
                     unitException = ex.InnerException?.InnerException ?? ex.InnerException ?? ex;
-                    if (_cloud._distributeTraceEnable) _cloud._distributedTraceCall($"TCC({masterInfo.Tid}, {masterInfo.Title}) Unit{_thenUnitInfos[idx].Index}{(string.IsNullOrWhiteSpace(_thenUnitInfos[idx].Description) ? "" : $"({_thenUnitInfos[idx].Description})")} TRY failed, ready to CANCEL, -ERR {unitException.Message}\r\n    State: {_thenUnitInfos[idx].State}\r\n    Type:  {_thenUnitInfos[idx].TypeName}");
+                    if (_cloud._distributeTraceEnable) _cloud._distributedTraceCall($"TCC ({masterInfo.Tid}, {masterInfo.Title}) Unit{_thenUnitInfos[idx].Index}{(string.IsNullOrWhiteSpace(_thenUnitInfos[idx].Description) ? "" : $"({_thenUnitInfos[idx].Description})")} TRY failed, ready to CANCEL, -ERR {unitException.Message}\r\n    State: {_thenUnitInfos[idx].State}\r\n    Type:  {_thenUnitInfos[idx].TypeName}");
                     break;
                 }
             }
@@ -140,8 +147,8 @@ namespace FreeSql.Cloud.Tcc
             var unitLiteInfos = Newtonsoft.Json.JsonConvert.DeserializeObject<TccUnitLiteInfo[]>(masterInfo.Units);
             if (unitLiteInfos?.Length != masterInfo.Total)
             {
-                if (cloud._distributeTraceEnable) cloud._distributedTraceCall($"TCC({masterInfo.Tid}, {masterInfo.Title}) Data error, cannot deserialize Units");
-                throw new ArgumentException($"TCC({masterInfo.Tid}, {masterInfo.Title}) Data error, cannot deserialize Units");
+                if (cloud._distributeTraceEnable) cloud._distributedTraceCall($"TCC ({masterInfo.Tid}, {masterInfo.Title}) Data error, cannot deserialize Units");
+                throw new ArgumentException($"TCC ({masterInfo.Tid}, {masterInfo.Title}) Data error, cannot deserialize Units");
             }
             var units = unitLiteInfos.Select(tl =>
             {
@@ -150,15 +157,15 @@ namespace FreeSql.Cloud.Tcc
                     var unitTypeDefault = Type.GetType(tl.TypeName).CreateInstanceGetDefaultValue() as ITccUnit;
                     if (unitTypeDefault == null)
                     {
-                        if (cloud._distributeTraceEnable) cloud._distributedTraceCall($"TCC({masterInfo.Tid}, {masterInfo.Title}) Data error, cannot create as ITccUnit, {tl.TypeName}");
-                        throw new ArgumentException($"TCC({masterInfo.Tid}, {masterInfo.Title}) Data error, cannot create as ITccUnit, {tl.TypeName}");
+                        if (cloud._distributeTraceEnable) cloud._distributedTraceCall($"TCC ({masterInfo.Tid}, {masterInfo.Title}) Data error, cannot create as ITccUnit, {tl.TypeName}");
+                        throw new ArgumentException($"TCC ({masterInfo.Tid}, {masterInfo.Title}) Data error, cannot create as ITccUnit, {tl.TypeName}");
                     }
                     return unitTypeDefault;
                 }
                 catch
                 {
-                    if (cloud._distributeTraceEnable) cloud._distributedTraceCall($"TCC({masterInfo.Tid}, {masterInfo.Title}) Data error, cannot create as ITccUnit, {tl.TypeName}");
-                    throw new ArgumentException($"TCC({masterInfo.Tid}, {masterInfo.Title}) Data error, cannot create as ITccUnit, {tl.TypeName}");
+                    if (cloud._distributeTraceEnable) cloud._distributedTraceCall($"TCC ({masterInfo.Tid}, {masterInfo.Title}) Data error, cannot create as ITccUnit, {tl.TypeName}");
+                    throw new ArgumentException($"TCC ({masterInfo.Tid}, {masterInfo.Title}) Data error, cannot create as ITccUnit, {tl.TypeName}");
                 }
             })
             .ToArray();
@@ -166,13 +173,13 @@ namespace FreeSql.Cloud.Tcc
             var unitInfos = unitOrms.Distinct().SelectMany(z => z.Select<TccUnitInfo>().Where(a => a.Tid == tid).ToList()).OrderBy(a => a.Index).ToList();
             await ConfimCancelAsync(cloud, masterInfo, unitInfos, units, unitOrms, retry);
         }
-        async static Task<bool> ConfimCancelAsync(FreeSqlCloud<TDBKey> cloud, TccMasterInfo masterInfo, List<TccUnitInfo> unitInfos, ITccUnit[] units, IFreeSql[] unitOrms, bool retry)
+        async static Task<bool?> ConfimCancelAsync(FreeSqlCloud<TDBKey> cloud, TccMasterInfo masterInfo, List<TccUnitInfo> unitInfos, ITccUnit[] units, IFreeSql[] unitOrms, bool retry)
         {
             var isConfirm = unitInfos.Count == masterInfo.Total;
             var successCount = 0;
             for (var idx = units.Length - 1; idx >= 0; idx--)
             {
-                var unitInfo = unitInfos.Where(tt => tt.Index == idx && tt.Stage == TccUnitStage.Try).FirstOrDefault();
+                var unitInfo = unitInfos.Where(tt => tt.Index == idx + 1 && tt.Stage == TccUnitStage.Try).FirstOrDefault();
                 try
                 {
                     if (unitInfo != null)
@@ -189,7 +196,7 @@ namespace FreeSql.Cloud.Tcc
                                 (units[idx] as ITccUnitSetter)?.SetTransaction(tran).SetOrm(fsql).SetUnit(unitInfo);
 
                                 var affrows = await fsql.Update<TccUnitInfo>()
-                                    .Where(a => a.Tid == masterInfo.Tid && a.Index == idx && a.Stage == TccUnitStage.Try)
+                                    .Where(a => a.Tid == masterInfo.Tid && a.Index == idx + 1 && a.Stage == TccUnitStage.Try)
                                     .Set(a => a.Stage, isConfirm ? TccUnitStage.Confirm : TccUnitStage.Cancel)
                                     .ExecuteAffrowsAsync();
                                 if (affrows == 1)
@@ -206,14 +213,14 @@ namespace FreeSql.Cloud.Tcc
                                     tran.Rollback();
                             }
                         }
-                        if (cloud._distributeTraceEnable) cloud._distributedTraceCall($"TCC({masterInfo.Tid}, {masterInfo.Title}) Unit{unitInfo.Index}{(string.IsNullOrWhiteSpace(unitInfo.Description) ? "" : $"({unitInfo.Description})")}{(masterInfo.RetryCount > 0 ? $" retry again {masterInfo.RetryCount} times" : "")} {(isConfirm ? "CONFIRM" : "CANCEL")} successful\r\n    State: {unitInfo.State}\r\n    Type:  {unitInfo.TypeName}");
+                        if (cloud._distributeTraceEnable) cloud._distributedTraceCall($"TCC ({masterInfo.Tid}, {masterInfo.Title}) Unit{unitInfo.Index}{(string.IsNullOrWhiteSpace(unitInfo.Description) ? "" : $"({unitInfo.Description})")}{(masterInfo.RetryCount > 0 ? $" retry again {masterInfo.RetryCount} times" : "")} {(isConfirm ? "CONFIRM" : "CANCEL")} successful\r\n    State: {unitInfo.State}\r\n    Type:  {unitInfo.TypeName}");
                     }
                     successCount++;
                 }
                 catch(Exception ex)
                 {
                     if (unitInfo != null)
-                        if (cloud._distributeTraceEnable) cloud._distributedTraceCall($"TCC({masterInfo.Tid}, {masterInfo.Title}) Unit{unitInfo.Index}{(string.IsNullOrWhiteSpace(unitInfo.Description) ? "" : $"({unitInfo.Description})")}{(masterInfo.RetryCount > 0 ? $" retry again {masterInfo.RetryCount} times" : "")} {(isConfirm ? "CONFIRM" : "CANCEL")} failed, -ERR {ex.Message}\r\n    State: {unitInfo.State}\r\n    Type:  {unitInfo.TypeName}");
+                        if (cloud._distributeTraceEnable) cloud._distributedTraceCall($"TCC ({masterInfo.Tid}, {masterInfo.Title}) Unit{unitInfo.Index}{(string.IsNullOrWhiteSpace(unitInfo.Description) ? "" : $"({unitInfo.Description})")}{(masterInfo.RetryCount > 0 ? $" retry again {masterInfo.RetryCount} times" : "")} {(isConfirm ? "CONFIRM" : "CANCEL")} failed, -ERR {ex.Message}\r\n    State: {unitInfo.State}\r\n    Type:  {unitInfo.TypeName}");
                 }
             }
             if (successCount == units.Length)
@@ -225,8 +232,8 @@ namespace FreeSql.Cloud.Tcc
                     .Set(a => a.Status, isConfirm ? TccMasterStatus.Confirmed : TccMasterStatus.Canceled)
                     .Set(a => a.FinishTime == DateTime.UtcNow)
                     .ExecuteAffrowsAsync();
-                if (cloud._distributeTraceEnable) cloud._distributedTraceCall($"TCC({masterInfo.Tid}, {masterInfo.Title}) End {(isConfirm ? "confirmed" : "canceled")},{(masterInfo.RetryCount > 0 ? $" retry again {masterInfo.RetryCount} times" : "")} {(isConfirm ? "CONFIRM" : "CANCEL")} successful");
-                return true;
+                if (cloud._distributeTraceEnable) cloud._distributedTraceCall($"TCC ({masterInfo.Tid}, {masterInfo.Title}) End {(isConfirm ? "confirmed" : "canceled")},{(masterInfo.RetryCount > 0 ? $" retry again {masterInfo.RetryCount} times" : "")} {(isConfirm ? "CONFIRM" : "CANCEL")} successful");
+                return isConfirm;
             }
             else
             {
@@ -239,15 +246,19 @@ namespace FreeSql.Cloud.Tcc
                 {
                     if (retry)
                     {
-                        //if (cloud.TccTraceEnable) cloud.OnTccTrace($"TCC({tcc.Tid}, {tcc.Title}) Not completed, waiting to try again, current tasks {cloud._scheduler.QuantityTempTask}");
+                        //if (cloud.TccTraceEnable) cloud.OnTccTrace($"TCC ({tcc.Tid}, {tcc.Title}) Not completed, waiting to try again, current tasks {cloud._scheduler.QuantityTempTask}");
                         cloud._scheduler.AddTempTask(TimeSpan.FromSeconds(masterInfo.RetryInterval), GetTempTask(cloud, masterInfo.Tid, masterInfo.Title, masterInfo.RetryInterval));
                     }
                 }
                 else
                 {
-                    if (cloud._distributeTraceEnable) cloud._distributedTraceCall($"TCC({masterInfo.Tid}, {masterInfo.Title}) Not completed, waiting for manual operation 【人工干预】");
+                    await cloud._ormMaster.Update<TccMasterInfo>()
+                        .Where(a => a.Tid == masterInfo.Tid && a.Status == TccMasterStatus.Pending)
+                        .Set(a => a.Status, TccMasterStatus.ManualOperation)
+                        .ExecuteAffrowsAsync();
+                    if (cloud._distributeTraceEnable) cloud._distributedTraceCall($"TCC ({masterInfo.Tid}, {masterInfo.Title}) Not completed, waiting for manual operation 【人工干预】");
                 }
-                return false;
+                return null;
             }
         }
         internal static Action GetTempTask(FreeSqlCloud<TDBKey> cloud, string tid, string title, int retryInterval)
@@ -269,7 +280,7 @@ namespace FreeSql.Cloud.Tcc
                             .ExecuteAffrows();
                     }
                     catch { }
-                    //if (cloud.TccTraceEnable) cloud.OnTccTrace($"TCC({tid}, {title}) Not completed, waiting to try again, current tasks {cloud._scheduler.QuantityTempTask}");
+                    //if (cloud.TccTraceEnable) cloud.OnTccTrace($"TCC ({tid}, {title}) Not completed, waiting to try again, current tasks {cloud._scheduler.QuantityTempTask}");
                     cloud._scheduler.AddTempTask(TimeSpan.FromSeconds(retryInterval), GetTempTask(cloud, tid, title, retryInterval));
                 }
             };

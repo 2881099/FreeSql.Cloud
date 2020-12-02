@@ -4,6 +4,7 @@ using System.Data;
 
 namespace FreeSql.Cloud.Tcc
 {
+    [Index("{tablename}_idx1", "status")]
     public class TccMasterInfo
     {
         [Column(Name = "tid", IsPrimary = true, StringLength = 128)]
@@ -39,7 +40,7 @@ namespace FreeSql.Cloud.Tcc
         [Column(Name = "retry_time")]
         public DateTime RetryTime { get; set; }
     }
-    public enum TccMasterStatus { Pending, Confirmed, Canceled }
+    public enum TccMasterStatus { Pending, Confirmed, Canceled, ManualOperation }
 
 
     public class TccUnitInfo

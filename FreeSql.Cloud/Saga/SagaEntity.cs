@@ -4,6 +4,7 @@ using System.Data;
 
 namespace FreeSql.Cloud.Saga
 {
+    [Index("{tablename}_idx1", "status")]
     public class SagaMasterInfo
     {
         [Column(Name = "tid", IsPrimary = true, StringLength = 128)]
@@ -39,7 +40,7 @@ namespace FreeSql.Cloud.Saga
         [Column(Name = "retry_time")]
         public DateTime RetryTime { get; set; }
     }
-    public enum SagaMasterStatus { Pending, Commited, Canceled }
+    public enum SagaMasterStatus { Pending, Commited, Canceled, ManualOperation }
 
 
     public class SagaUnitInfo
