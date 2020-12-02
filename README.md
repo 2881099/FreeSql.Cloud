@@ -47,8 +47,6 @@ fsql.Change(DbEnum.db3).Select<T>();
 
 ## 关于分布式事务
 
-FreeSqlCloud 提供 TCC/SAGA 分布式事务将多个【单元】串连起来执行。
-
 1、唯一标识
 
 FreeSqlCloud 使用唯一标识区分，从而达到事务管理互不冲突的目的，举例：
