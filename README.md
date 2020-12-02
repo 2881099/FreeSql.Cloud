@@ -1,6 +1,6 @@
 <h1 align="center"> 🦄 FreeSql.Cloud </h1>
 
-为 FreeSql 提供跨数据库访问，分布式事务TCC、SAGA解决方案。
+为 FreeSql 提供跨数据库访问，分布式事务TCC、SAGA解决方案，支持 .NET Core 2.1+, .NET Framework 4.0+.
 
 ## 快速开始
 
@@ -8,7 +8,7 @@
 public enum DbEnum { db1, db2, db3 }
 
 var fsql = new FreeSqlCloud<DbEnum>("myapp"); //提示：泛型可以传入 string
-fsql.DistributeTrace += (_, log) => Console.WriteLine(log.Split('\n')[0].Trim());
+fsql.DistributeTrace = log => Console.WriteLine(log.Split('\n')[0].Trim());
 
 fsql.Register(DbEnum.db1, () => new FreeSqlBuilder()
     .UseConnectionString(DataType.Sqlite, @"Data Source=db1.db")

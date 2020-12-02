@@ -3,7 +3,7 @@ using System;
 using System.ComponentModel;
 using System.Threading.Tasks;
 
-namespace ConsoleApp1
+namespace netcore31_tcc_saga
 {
     class Program
     {
@@ -12,7 +12,7 @@ namespace ConsoleApp1
         {
             using (var fsql = new FreeSqlCloud<DbEnum>("app001"))
             {
-                fsql.DistributeTrace += (_, log) => Console.WriteLine(log.Split('\n')[0].Trim());
+                fsql.DistributeTrace += log => Console.WriteLine(log.Split('\n')[0].Trim());
 
                 fsql.Register(DbEnum.db1, () => new FreeSqlBuilder()
                     .UseConnectionString(DataType.Sqlite, @"Data Source=db1.db")
@@ -39,7 +39,7 @@ namespace ConsoleApp1
                     .ExecuteAsync();
 
                 tid = Guid.NewGuid().ToString();
-                await fsql.StartTcc(tid, "支付购买", 
+                await fsql.StartTcc(tid, "支付购买",
                     new TccOptions
                     {
                         MaxRetryCount = 10,

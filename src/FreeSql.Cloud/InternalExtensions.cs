@@ -227,6 +227,27 @@ static class InternalExtensions
         if (that is FieldInfo field) return field.FieldType;
         return null;
     }
+    public static string GetDescription(this Type that)
+    {
+        object[] attrs = null;
+        try
+        {
+            attrs = that.GetCustomAttributes(false).ToArray(); //.net core 反射存在版本冲突问题，导致该方法异常
+        }
+        catch { }
+
+        var dyattr = attrs?.Where(a => {
+            return ((a as Attribute)?.TypeId as Type)?.Name == "DescriptionAttribute";
+        }).FirstOrDefault();
+        if (dyattr != null)
+        {
+            var valueProp = dyattr.GetType().GetProperties().Where(a => a.PropertyType == typeof(string)).FirstOrDefault();
+            var comment = valueProp?.GetValue(dyattr, null)?.ToString();
+            if (string.IsNullOrEmpty(comment) == false)
+                return comment;
+        }
+        return null;
+    }
     #endregion
 
     #region 类型转换

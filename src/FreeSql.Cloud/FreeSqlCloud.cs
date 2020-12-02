@@ -12,10 +12,14 @@ namespace FreeSql
     public partial class FreeSqlCloud<TDBKey> : IFreeSql
     {
         public string DistributeKey { get; }
-        public event EventHandler<string> DistributeTrace;
+        public Action<string> DistributeTrace;
 
         internal TDBKey _dbkeyMaster;
+#if net40
+        internal ThreadLocal<TDBKey> _dbkeyCurrent = new ThreadLocal<TDBKey>();
+#else
         internal AsyncLocal<TDBKey> _dbkeyCurrent = new AsyncLocal<TDBKey>();
+#endif
         internal IFreeSql _ormMaster => _ib.Get(_dbkeyMaster);
         internal IFreeSql _ormCurrent => _ib.Get(object.Equals(_dbkeyCurrent.Value, default(TDBKey)) ? _dbkeyMaster : _dbkeyCurrent.Value);
         internal IdleBus<TDBKey, IFreeSql> _ib;
@@ -23,7 +27,7 @@ namespace FreeSql
         internal bool _distributeTraceEnable => DistributeTrace != null;
         internal void _distributedTraceCall(string log)
         {
-            DistributeTrace?.Invoke(this, $"{DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")} 【{DistributeKey}】{log}");
+            DistributeTrace?.Invoke($"{DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")} 【{DistributeKey}】{log}");
         }
 
         public FreeSqlCloud(string distributeKey = "master")
