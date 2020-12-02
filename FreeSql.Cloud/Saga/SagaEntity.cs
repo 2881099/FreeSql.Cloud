@@ -2,9 +2,9 @@
 using System;
 using System.Data;
 
-namespace FreeSql.Cloud.Tcc
+namespace FreeSql.Cloud.Saga
 {
-    public class TccMasterInfo
+    public class SagaMasterInfo
     {
         [Column(Name = "tid", IsPrimary = true, StringLength = 128)]
         public string Tid { get; set; }
@@ -25,7 +25,7 @@ namespace FreeSql.Cloud.Tcc
         public DateTime FinishTime { get; set; }
 
         [Column(Name = "status", MapType = typeof(string), StringLength = 10)]
-        public TccMasterStatus Status { get; set; }
+        public SagaMasterStatus Status { get; set; }
 
         [Column(Name = "max_retry_count")]
         public int MaxRetryCount { get; set; } = 30;
@@ -39,10 +39,10 @@ namespace FreeSql.Cloud.Tcc
         [Column(Name = "retry_time")]
         public DateTime RetryTime { get; set; }
     }
-    public enum TccMasterStatus { Pending, Confirmed, Canceled }
+    public enum SagaMasterStatus { Pending, Commited, Canceled }
 
 
-    public class TccUnitInfo
+    public class SagaUnitInfo
     {
         [Column(Name = "tid", IsPrimary = true, StringLength = 128)]
         public string Tid { get; set; }
@@ -54,7 +54,7 @@ namespace FreeSql.Cloud.Tcc
         public string Description { get; set; }
 
         [Column(Name = "stage", MapType = typeof(string), StringLength = 8)]
-        public TccUnitStage Stage { get; set; }
+        public SagaUnitStage Stage { get; set; }
 
         [Column(Name = "db_key")]
         public string DbKey { get; set; }
@@ -74,9 +74,9 @@ namespace FreeSql.Cloud.Tcc
         [Column(Name = "create_time", ServerTime = DateTimeKind.Utc, CanUpdate = false)]
         public DateTime CreateTime { get; set; } = DateTime.UtcNow;
     }
-    public enum TccUnitStage { Try, Confirm, Cancel }
+    public enum SagaUnitStage { Commit, Cancel }
 
-    public class TccUnitLiteInfo
+    public class SagaUnitLiteInfo
     {
         public string DbKey { get; set; }
         public string TypeName { get; set; }

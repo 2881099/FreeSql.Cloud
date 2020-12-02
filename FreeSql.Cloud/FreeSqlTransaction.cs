@@ -4,24 +4,24 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 
-namespace FreeSql.Cloud
+namespace FreeSql
 {
-    class TccOrm : IFreeSql
+    class FreeSqlTransaction : IFreeSql
     {
         readonly IFreeSql _orm;
         readonly Func<DbTransaction> _resolveTran;
 
-        TccOrm(IFreeSql fsql, Func<DbTransaction> resolveTran)
+        FreeSqlTransaction(IFreeSql fsql, Func<DbTransaction> resolveTran)
         {
             _orm = fsql;
             _resolveTran = resolveTran;
         }
 
-        public static TccOrm Create(IFreeSql fsql, Func<DbTransaction> resolveTran)
+        public static FreeSqlTransaction Create(IFreeSql fsql, Func<DbTransaction> resolveTran)
         {
             if (fsql == null) return null;
-            var scopedfsql = fsql as TccOrm;
-            if (scopedfsql == null) return new TccOrm(fsql, resolveTran);
+            var scopedfsql = fsql as FreeSqlTransaction;
+            if (scopedfsql == null) return new FreeSqlTransaction(fsql, resolveTran);
             return Create(scopedfsql._orm, resolveTran);
         }
 
