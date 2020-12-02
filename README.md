@@ -4,6 +4,12 @@
 
 ## 快速开始
 
+> dotnet add package FreeSql.Cloud
+
+or
+
+> Install-Package FreeSql.Cloud
+
 ```c#
 public enum DbEnum { db1, db2, db3 }
 
