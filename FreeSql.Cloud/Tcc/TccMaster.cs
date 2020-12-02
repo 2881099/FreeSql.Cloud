@@ -213,14 +213,14 @@ namespace FreeSql.Cloud.Tcc
                                     tran.Rollback();
                             }
                         }
-                        if (cloud._distributeTraceEnable) cloud._distributedTraceCall($"TCC ({masterInfo.Tid}, {masterInfo.Title}) Unit{unitInfo.Index}{(string.IsNullOrWhiteSpace(unitInfo.Description) ? "" : $"({unitInfo.Description})")}{(masterInfo.RetryCount > 0 ? $" retry again {masterInfo.RetryCount} times" : "")} {(isConfirm ? "CONFIRM" : "CANCEL")} successful\r\n    State: {unitInfo.State}\r\n    Type:  {unitInfo.TypeName}");
+                        if (cloud._distributeTraceEnable) cloud._distributedTraceCall($"TCC ({masterInfo.Tid}, {masterInfo.Title}) Unit{unitInfo.Index}{(string.IsNullOrWhiteSpace(unitInfo.Description) ? "" : $"({unitInfo.Description})")} {(isConfirm ? "CONFIRM" : "CANCEL")} successful{(masterInfo.RetryCount > 0 ? $" after {masterInfo.RetryCount} retries" : "")}\r\n    State: {unitInfo.State}\r\n    Type:  {unitInfo.TypeName}");
                     }
                     successCount++;
                 }
                 catch(Exception ex)
                 {
                     if (unitInfo != null)
-                        if (cloud._distributeTraceEnable) cloud._distributedTraceCall($"TCC ({masterInfo.Tid}, {masterInfo.Title}) Unit{unitInfo.Index}{(string.IsNullOrWhiteSpace(unitInfo.Description) ? "" : $"({unitInfo.Description})")}{(masterInfo.RetryCount > 0 ? $" retry again {masterInfo.RetryCount} times" : "")} {(isConfirm ? "CONFIRM" : "CANCEL")} failed, -ERR {ex.Message}\r\n    State: {unitInfo.State}\r\n    Type:  {unitInfo.TypeName}");
+                        if (cloud._distributeTraceEnable) cloud._distributedTraceCall($"TCC ({masterInfo.Tid}, {masterInfo.Title}) Unit{unitInfo.Index}{(string.IsNullOrWhiteSpace(unitInfo.Description) ? "" : $"({unitInfo.Description})")} {(isConfirm ? "CONFIRM" : "CANCEL")} failed{(masterInfo.RetryCount > 0 ? $" after {masterInfo.RetryCount} retries" : "")}, -ERR {ex.Message}\r\n    State: {unitInfo.State}\r\n    Type:  {unitInfo.TypeName}");
                 }
             }
             if (successCount == units.Length)
@@ -232,7 +232,7 @@ namespace FreeSql.Cloud.Tcc
                     .Set(a => a.Status, isConfirm ? TccMasterStatus.Confirmed : TccMasterStatus.Canceled)
                     .Set(a => a.FinishTime == DateTime.UtcNow)
                     .ExecuteAffrowsAsync();
-                if (cloud._distributeTraceEnable) cloud._distributedTraceCall($"TCC ({masterInfo.Tid}, {masterInfo.Title}) End {(isConfirm ? "confirmed" : "canceled")},{(masterInfo.RetryCount > 0 ? $" retry again {masterInfo.RetryCount} times" : "")} {(isConfirm ? "CONFIRM" : "CANCEL")} successful");
+                if (cloud._distributeTraceEnable) cloud._distributedTraceCall($"TCC ({masterInfo.Tid}, {masterInfo.Title}) Completed, all units {(isConfirm ? "CONFIRM" : "CANCEL")} successfully{(masterInfo.RetryCount > 0 ? $" after {masterInfo.RetryCount} retries" : "")}");
                 return isConfirm;
             }
             else

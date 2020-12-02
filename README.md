@@ -106,17 +106,17 @@ class Tcc3 : TccUnit<LocalState>
 2020-12-02 14:03:35 【app001】TCC (5fec6379-d43e-4d5f-95a2-42ea8710f176, 支付购买) Unit2(第2步) TRY successful
 2020-12-02 14:03:35 【app001】TCC (5fec6379-d43e-4d5f-95a2-42ea8710f176, 支付购买) Unit3(第3步) TRY failed, ready to CANCEL, -ERR xxx
 2020-12-02 14:03:35 【app001】TCC (5fec6379-d43e-4d5f-95a2-42ea8710f176, 支付购买) Unit2(第2步) CANCEL successful
-2020-12-02 14:03:35 【app001】TCC (5fec6379-d43e-4d5f-95a2-42ea8710f176, 支付购买) Unit1(第1步) CANCEL failed, -ERR dkdkdk
-2020-12-02 14:03:45 【app001】TCC (5fec6379-d43e-4d5f-95a2-42ea8710f176, 支付购买) Unit1(第1步) retry again 1 times CANCEL failed, -ERR dkdkdk
-2020-12-02 14:03:55 【app001】TCC (5fec6379-d43e-4d5f-95a2-42ea8710f176, 支付购买) Unit1(第1步) retry again 2 times CANCEL failed, -ERR dkdkdk
-2020-12-02 14:04:06 【app001】TCC (5fec6379-d43e-4d5f-95a2-42ea8710f176, 支付购买) Unit1(第1步) retry again 3 times CANCEL failed, -ERR dkdkdk
-2020-12-02 14:04:16 【app001】TCC (5fec6379-d43e-4d5f-95a2-42ea8710f176, 支付购买) Unit1(第1步) retry again 4 times CANCEL failed, -ERR dkdkdk
-2020-12-02 14:04:26 【app001】TCC (5fec6379-d43e-4d5f-95a2-42ea8710f176, 支付购买) Unit1(第1步) retry again 5 times CANCEL failed, -ERR dkdkdk
-2020-12-02 14:04:36 【app001】TCC (5fec6379-d43e-4d5f-95a2-42ea8710f176, 支付购买) Unit1(第1步) retry again 6 times CANCEL failed, -ERR dkdkdk
-2020-12-02 14:04:46 【app001】TCC (5fec6379-d43e-4d5f-95a2-42ea8710f176, 支付购买) Unit1(第1步) retry again 7 times CANCEL failed, -ERR dkdkdk
-2020-12-02 14:04:57 【app001】TCC (5fec6379-d43e-4d5f-95a2-42ea8710f176, 支付购买) Unit1(第1步) retry again 8 times CANCEL failed, -ERR dkdkdk
-2020-12-02 14:05:07 【app001】TCC (5fec6379-d43e-4d5f-95a2-42ea8710f176, 支付购买) Unit1(第1步) retry again 9 times CANCEL failed, -ERR dkdkdk
-2020-12-02 14:05:17 【app001】TCC (5fec6379-d43e-4d5f-95a2-42ea8710f176, 支付购买) Unit1(第1步) retry again 10 times CANCEL failed, -ERR dkdkdk
+2020-12-02 14:03:35 【app001】TCC (5fec6379-d43e-4d5f-95a2-42ea8710f176, 支付购买) Unit1(第1步) CANCEL failed , -ERR dkdkdk
+2020-12-02 14:03:45 【app001】TCC (5fec6379-d43e-4d5f-95a2-42ea8710f176, 支付购买) Unit1(第1步) CANCEL failed retry again 1 times , -ERR dkdkdk
+2020-12-02 14:03:55 【app001】TCC (5fec6379-d43e-4d5f-95a2-42ea8710f176, 支付购买) Unit1(第1步) CANCEL failed retry again 2 times , -ERR dkdkdk
+2020-12-02 14:04:06 【app001】TCC (5fec6379-d43e-4d5f-95a2-42ea8710f176, 支付购买) Unit1(第1步) CANCEL failed retry again 3 times , -ERR dkdkdk
+2020-12-02 14:04:16 【app001】TCC (5fec6379-d43e-4d5f-95a2-42ea8710f176, 支付购买) Unit1(第1步) CANCEL failed retry again 4 times , -ERR dkdkdk
+2020-12-02 14:04:26 【app001】TCC (5fec6379-d43e-4d5f-95a2-42ea8710f176, 支付购买) Unit1(第1步) CANCEL failed retry again 5 times , -ERR dkdkdk
+2020-12-02 14:04:36 【app001】TCC (5fec6379-d43e-4d5f-95a2-42ea8710f176, 支付购买) Unit1(第1步) CANCEL failed retry again 6 times , -ERR dkdkdk
+2020-12-02 14:04:46 【app001】TCC (5fec6379-d43e-4d5f-95a2-42ea8710f176, 支付购买) Unit1(第1步) CANCEL failed retry again 7 times , -ERR dkdkdk
+2020-12-02 14:04:57 【app001】TCC (5fec6379-d43e-4d5f-95a2-42ea8710f176, 支付购买) Unit1(第1步) CANCEL failed retry again 8 times , -ERR dkdkdk
+2020-12-02 14:05:07 【app001】TCC (5fec6379-d43e-4d5f-95a2-42ea8710f176, 支付购买) Unit1(第1步) CANCEL failed retry again 9 times , -ERR dkdkdk
+2020-12-02 14:05:17 【app001】TCC (5fec6379-d43e-4d5f-95a2-42ea8710f176, 支付购买) Unit1(第1步) CANCEL failed retry again 10 times , -ERR dkdkdk
 2020-12-02 14:05:17 【app001】TCC (5fec6379-d43e-4d5f-95a2-42ea8710f176, 支付购买) Not completed, waiting for manual operation 【人工干预】
 ```
 
@@ -181,10 +181,10 @@ class Saga3 : SagaUnit<LocalState>
 2020-12-02 14:07:31 【app001】SAGA(e5469b8f-c27f-498a-a0f8-6dd128967dca, 发表评论) Unit3(第3步) COMMIT failed, ready to CANCEL, -ERR xxx
 2020-12-02 14:07:31 【app001】SAGA(e5469b8f-c27f-498a-a0f8-6dd128967dca, 发表评论) Unit2(第1步) CANCEL successful
 2020-12-02 14:07:31 【app001】SAGA(e5469b8f-c27f-498a-a0f8-6dd128967dca, 发表评论) Unit1(第1步) CANCEL failed, -ERR dkdkdk
-2020-12-02 14:07:36 【app001】SAGA(e5469b8f-c27f-498a-a0f8-6dd128967dca, 发表评论) Unit1(第1步) retry again 1 times CANCEL failed, -ERR dkdkdk
-2020-12-02 14:07:41 【app001】SAGA(e5469b8f-c27f-498a-a0f8-6dd128967dca, 发表评论) Unit1(第1步) retry again 2 times CANCEL failed, -ERR dkdkdk
-2020-12-02 14:07:47 【app001】SAGA(e5469b8f-c27f-498a-a0f8-6dd128967dca, 发表评论) Unit1(第1步) retry again 3 times CANCEL failed, -ERR dkdkdk
-2020-12-02 14:07:52 【app001】SAGA(e5469b8f-c27f-498a-a0f8-6dd128967dca, 发表评论) Unit1(第1步) retry again 4 times CANCEL failed, -ERR dkdkdk
-2020-12-02 14:07:57 【app001】SAGA(e5469b8f-c27f-498a-a0f8-6dd128967dca, 发表评论) Unit1(第1步) retry again 5 times CANCEL failed, -ERR dkdkdk
+2020-12-02 14:07:36 【app001】SAGA(e5469b8f-c27f-498a-a0f8-6dd128967dca, 发表评论) Unit1(第1步) CANCEL failed after 1 retries, -ERR dkdkdk
+2020-12-02 14:07:41 【app001】SAGA(e5469b8f-c27f-498a-a0f8-6dd128967dca, 发表评论) Unit1(第1步) CANCEL failed after 2 retries, -ERR dkdkdk
+2020-12-02 14:07:47 【app001】SAGA(e5469b8f-c27f-498a-a0f8-6dd128967dca, 发表评论) Unit1(第1步) CANCEL failed after 3 retries, -ERR dkdkdk
+2020-12-02 14:07:52 【app001】SAGA(e5469b8f-c27f-498a-a0f8-6dd128967dca, 发表评论) Unit1(第1步) CANCEL failed after 4 retries, -ERR dkdkdk
+2020-12-02 14:07:57 【app001】SAGA(e5469b8f-c27f-498a-a0f8-6dd128967dca, 发表评论) Unit1(第1步) CANCEL failed after 5 retries, -ERR dkdkdk
 2020-12-02 14:07:57 【app001】SAGA(e5469b8f-c27f-498a-a0f8-6dd128967dca, 发表评论) Not completed, waiting for manual operation 【人工干预】
 ```

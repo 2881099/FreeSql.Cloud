@@ -213,14 +213,14 @@ namespace FreeSql.Cloud.Saga
                                         tran.Rollback();
                                 }
                             }
-                            if (cloud._distributeTraceEnable) cloud._distributedTraceCall($"SAGA({masterInfo.Tid}, {masterInfo.Title}) Unit{unitInfo.Index}{(string.IsNullOrWhiteSpace(unitInfo.Description) ? "" : $"({unitInfo.Description})")}{(masterInfo.RetryCount > 0 ? $" retry again {masterInfo.RetryCount} times" : "")} {(isCommited ? "COMMIT" : "CANCEL")} successful\r\n    State: {unitInfo.State}\r\n    Type:  {unitInfo.TypeName}");
+                            if (cloud._distributeTraceEnable) cloud._distributedTraceCall($"SAGA({masterInfo.Tid}, {masterInfo.Title}) Unit{unitInfo.Index}{(string.IsNullOrWhiteSpace(unitInfo.Description) ? "" : $"({unitInfo.Description})")} {(isCommited ? "COMMIT" : "CANCEL")} successful{(masterInfo.RetryCount > 0 ? $" after {masterInfo.RetryCount} retries" : "")}\r\n    State: {unitInfo.State}\r\n    Type:  {unitInfo.TypeName}");
                         }
                         cancelCount++;
                     }
                     catch (Exception ex)
                     {
                         if (unitInfo != null)
-                            if (cloud._distributeTraceEnable) cloud._distributedTraceCall($"SAGA({masterInfo.Tid}, {masterInfo.Title}) Unit{unitInfo.Index}{(string.IsNullOrWhiteSpace(unitInfo.Description) ? "" : $"({unitInfo.Description})")}{(masterInfo.RetryCount > 0 ? $" retry again {masterInfo.RetryCount} times" : "")} {(isCommited ? "COMMIT" : "CANCEL")} failed, -ERR {ex.Message}\r\n    State: {unitInfo.State}\r\n    Type:  {unitInfo.TypeName}");
+                            if (cloud._distributeTraceEnable) cloud._distributedTraceCall($"SAGA({masterInfo.Tid}, {masterInfo.Title}) Unit{unitInfo.Index}{(string.IsNullOrWhiteSpace(unitInfo.Description) ? "" : $"({unitInfo.Description})")} {(isCommited ? "COMMIT" : "CANCEL")} failed{(masterInfo.RetryCount > 0 ? $" after {masterInfo.RetryCount} retries" : "")}, -ERR {ex.Message}\r\n    State: {unitInfo.State}\r\n    Type:  {unitInfo.TypeName}");
                     }
                 }
                 isCanceled = cancelCount == units.Length;
@@ -234,7 +234,7 @@ namespace FreeSql.Cloud.Saga
                     .Set(a => a.Status, isCommited ? SagaMasterStatus.Commited : SagaMasterStatus.Canceled)
                     .Set(a => a.FinishTime == DateTime.UtcNow)
                     .ExecuteAffrowsAsync();
-                if (cloud._distributeTraceEnable) cloud._distributedTraceCall($"SAGA({masterInfo.Tid}, {masterInfo.Title}) End {(isCommited ? "commited" : "canceled")},{(masterInfo.RetryCount > 0 ? $" retry again {masterInfo.RetryCount} times" : "")} {(isCommited ? "COMMIT" : "CANCEL")} successful");
+                if (cloud._distributeTraceEnable) cloud._distributedTraceCall($"SAGA({masterInfo.Tid}, {masterInfo.Title}) Completed, all units {(isCommited ? "COMMIT" : "CANCEL")} successfully{(masterInfo.RetryCount > 0 ? $" after {masterInfo.RetryCount} retries" : "")}");
                 return isCommited;
             }
             else
