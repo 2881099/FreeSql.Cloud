@@ -84,7 +84,7 @@ fsql.Register 第一个注册的称之为【主库】，存储 TCC/SAGA 相关�
 
 fsql.Register 第一个和第N个注册的称之为【单元库】，请注意【主库】也是【单元库】，实现强一致性及相关存储。
 
-分库会自动创建表 tcc_myapp_unit、saga_myapp_unit：
+每个单元库会自动创建表 tcc_myapp_unit、saga_myapp_unit：
 
 | 字段名 | 描述 |
 | --- | --- |
