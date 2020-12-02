@@ -5,7 +5,8 @@
 ## 快速开始
 
 ```c#
-var fsql = new FreeSqlCloud())
+var fsql = new FreeSqlCloud("myapp");
+fsql.TccTrace += (_, log) => Console.WriteLine(log.Split('\n')[0].Trim());
 
 fsql.Register("db1", () => new FreeSqlBuilder()
     .UseConnectionString(FreeSql.DataType.Sqlite, @"Data Source=db1.db")
@@ -44,7 +45,7 @@ fsql.Change("db3").Select<T>();
 
 ```c#
 var tid = Guid.NewGuid().ToString();
-await fsql.StartTcc(tid)
+await fsql.StartTcc(tid, "创建订单")
     .Then(typeof(Tcc1), "db1", new TccState { Id = 1, Name = "tcc1" })
     .Then(typeof(Tcc2), "db2")
     .Then(typeof(Tcc3), "db3", new TccState { Id = 3, Name = "tcc3" })
@@ -57,7 +58,7 @@ class TccState
     public string Name { get; set; }
 }
 
-class Tcc1 : TccBase<TccState>
+class Tcc1 : TccUnit<TccState>
 {
     public override void Cancel()
     {
@@ -70,7 +71,7 @@ class Tcc1 : TccBase<TccState>
     }
 }
 
-class Tcc2 : TccBase<TccState>
+class Tcc2 : TccUnit<TccState>
 {
     public override void Cancel()
     {
@@ -83,7 +84,7 @@ class Tcc2 : TccBase<TccState>
     }
 }
 
-class Tcc3 : TccBase<TccState>
+class Tcc3 : TccUnit<TccState>
 {
     public override void Cancel()
     {

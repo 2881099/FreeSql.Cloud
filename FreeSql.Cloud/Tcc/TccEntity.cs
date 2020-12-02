@@ -4,17 +4,19 @@ using System.Data;
 
 namespace FreeSql.Cloud
 {
-    [Table(Name = "tcc_master")]
-    public class TccMaster
+    public class TccMasterInfo
     {
         [Column(Name = "tid", IsPrimary = true, StringLength = 128)]
         public string Tid { get; set; }
 
+        [Column(Name = "title")]
+        public string Title { get; set; }
+
         [Column(Name = "total")]
         public int Total { get; set; }
 
-        [Column(Name = "tasks", StringLength = -1)]
-        public string Tasks { get; set; }
+        [Column(Name = "units", StringLength = -1)]
+        public string Units { get; set; }
 
         [Column(Name = "create_time", ServerTime = DateTimeKind.Utc, CanUpdate = false)]
         public DateTime CreateTime { get; set; } = DateTime.UtcNow;
@@ -25,6 +27,12 @@ namespace FreeSql.Cloud
         [Column(Name = "status", MapType = typeof(string), StringLength = 10)]
         public TccMasterStatus Status { get; set; }
 
+        [Column(Name = "max_retry_count")]
+        public int MaxRetryCount { get; set; } = 30;
+
+        [Column(Name = "retry_interval")]
+        public int RetryInterval { get; set; } = 60;
+
         [Column(Name = "retry_count")]
         public int RetryCount { get; set; }
 
@@ -34,8 +42,7 @@ namespace FreeSql.Cloud
     public enum TccMasterStatus { Pending, Confirmed, Canceled }
 
 
-    [Table(Name = "tcc_task")]
-    public class TccTask
+    public class TccUnitInfo
     {
         [Column(Name = "tid", IsPrimary = true, StringLength = 128)]
         public string Tid { get; set; }
@@ -47,7 +54,7 @@ namespace FreeSql.Cloud
         public string Description { get; set; }
 
         [Column(Name = "stage", MapType = typeof(string), StringLength = 8)]
-        public TccTaskStage Stage { get; set; }
+        public TccUnitStage Stage { get; set; }
 
         [Column(Name = "cloud_name")]
         public string CloudName { get; set; }
@@ -67,9 +74,9 @@ namespace FreeSql.Cloud
         [Column(Name = "create_time", ServerTime = DateTimeKind.Utc, CanUpdate = false)]
         public DateTime CreateTime { get; set; } = DateTime.UtcNow;
     }
-    public enum TccTaskStage { Try, Confirm, Cancel }
+    public enum TccUnitStage { Try, Confirm, Cancel }
 
-    public class TccTaskLite
+    public class TccUnitLiteInfo
     {
         public string CloudName { get; set; }
         public string TypeName { get; set; }

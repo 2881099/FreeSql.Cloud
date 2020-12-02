@@ -5,10 +5,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="FreeSql" Version="2.0.101" />
-    <PackageReference Include="FreeSql.DbContext" Version="2.0.101" />
-    <PackageReference Include="IdleBus" Version="1.5.0" />
-    <PackageReference Include="IdleScheduler" Version="1.5.0" />
+    <PackageReference Include="FreeSql" Version="2.0.102" />
+    <PackageReference Include="IdleBus" Version="1.5.1" />
+    <PackageReference Include="IdleScheduler" Version="1.5.1" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
   </ItemGroup>
 

@@ -9,27 +9,37 @@ namespace ConsoleApp1
     {
         async static Task Main(string[] args)
         {
-            using (var fsqlc = new FreeSqlCloud())
+            using (var fsql = new FreeSqlCloud("app001"))
             {
-                fsqlc.Register("db1", () => new FreeSqlBuilder().UseConnectionString(FreeSql.DataType.Sqlite, @"Data Source=db1.db").Build());
-                fsqlc.Register("db2", () => new FreeSqlBuilder().UseConnectionString(FreeSql.DataType.Sqlite, @"Data Source=db2.db").Build());
-                fsqlc.Register("db3", () => new FreeSqlBuilder().UseConnectionString(FreeSql.DataType.Sqlite, @"Data Source=db3.db").Build());
+                fsql.TccTrace += (_, log) => Console.WriteLine(log.Split('\n')[0].Trim());
+                fsql.Register("db1", () => new FreeSqlBuilder().UseConnectionString(FreeSql.DataType.Sqlite, @"Data Source=db1.db").Build());
+                fsql.Register("db2", () => new FreeSqlBuilder().UseConnectionString(FreeSql.DataType.Sqlite, @"Data Source=db2.db").Build());
+                fsql.Register("db3", () => new FreeSqlBuilder().UseConnectionString(FreeSql.DataType.Sqlite, @"Data Source=db3.db").Build());
 
-                var tid = Guid.NewGuid().ToString();
-                await fsqlc
-                    .StartTcc(tid)
-                    .Then(typeof(Tcc1), "db1")
-                    .Then(typeof(Tcc2), "db2")
-                    .Then(typeof(Tcc3), "db3")
-                    .ExecuteAsync();
+                //for (var a = 0; a < 1000; a++)
+                //{
+                    var tid = Guid.NewGuid().ToString();
+                    await fsql
+                        .StartTcc(tid, "创建订单")
+                        .Then(typeof(Tcc1), "db1")
+                        .Then(typeof(Tcc2), "db2")
+                        .Then(typeof(Tcc3), "db3")
+                        .ExecuteAsync();
 
-                tid = Guid.NewGuid().ToString();
-                await fsqlc
-                    .StartTcc(tid)
-                    .Then(typeof(Tcc1), "db1", new TccState { Id = 1, Name = "tcc1" })
-                    .Then(typeof(Tcc2), "db2")
-                    .Then(typeof(Tcc3), "db3", new TccState { Id = 3, Name = "tcc3" })
-                    .ExecuteAsync();
+                    tid = Guid.NewGuid().ToString();
+                    await fsql
+                        .StartTcc(tid, "支付购买", new TccOptions
+                        {
+                            MaxRetryCount = 10,
+                            RetryInterval = TimeSpan.FromSeconds(10)
+                        })
+                        .Then(typeof(Tcc1), "db1", new TccState { Id = 1, Name = "tcc1" })
+                        .Then(typeof(Tcc2), "db2")
+                        .Then(typeof(Tcc3), "db3", new TccState { Id = 3, Name = "tcc3" })
+                        .ExecuteAsync();
+                //}
+
+                Console.ReadKey();
             }
         }
     }
@@ -39,7 +49,21 @@ namespace ConsoleApp1
         public string Name { get; set; }
     }
 
-    class Tcc1 : TccBase<TccState>
+    class Tcc1 : TccUnit<TccState>
+    {
+        public override void Cancel()
+        {
+            throw new Exception("dkdkdk");
+        }
+        public override void Confirm()
+        {
+        }
+        public override void Try()
+        {
+        }
+    }
+
+    class Tcc2 : TccUnit<TccState>
     {
         public override void Cancel()
         {
@@ -52,20 +76,7 @@ namespace ConsoleApp1
         }
     }
 
-    class Tcc2 : TccBase<TccState>
-    {
-        public override void Cancel()
-        {
-        }
-        public override void Confirm()
-        {
-        }
-        public override void Try()
-        {
-        }
-    }
-
-    class Tcc3 : TccBase<TccState>
+    class Tcc3 : TccUnit<TccState>
     {
         public override void Cancel()
         {
