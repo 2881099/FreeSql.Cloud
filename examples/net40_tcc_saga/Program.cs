@@ -85,75 +85,41 @@ namespace net40_tcc_saga
     [Description("第1步")]
     class Tcc1 : TccUnit<LocalState>
     {
-        public override void Cancel()
-        {
-            throw new Exception("dkdkdk");
-        }
-        public override void Confirm()
-        {
-        }
-        public override void Try()
-        {
-        }
+        public override void Cancel() => throw new Exception("dkdkdk");
+        public override void Confirm() { }
+        public override void Try() { }
     }
     [Description("第2步")]
     class Tcc2 : TccUnit<LocalState>
     {
-        public override void Cancel()
-        {
-        }
-        public override void Confirm()
-        {
-        }
-        public override void Try()
-        {
-        }
+        public override void Cancel() => Fsql.Ado.ExecuteNonQuery("update user set xx = xx - 1 where id = @id", new { State.Id });
+        public override void Confirm() => Fsql.Ado.ExecuteNonQuery("update order set status = 成功 where id = xxx");
+        public override void Try() => Fsql.Ado.ExecuteNonQuery("update user set xx = xx + 1 where id = @id", new { State.Id });
     }
     [Description("第3步")]
     class Tcc3 : TccUnit<LocalState>
     {
-        public override void Cancel()
-        {
-        }
-        public override void Confirm()
-        {
-        }
-        public override void Try()
-        {
-            throw new Exception("xxx");
-        }
+        public override void Cancel() { }
+        public override void Confirm() { }
+        public override void Try() => throw new Exception("xxx");
     }
 
     [Description("第1步")]
     class Saga1 : SagaUnit<LocalState>
     {
-        public override void Cancel()
-        {
-            throw new Exception("dkdkdk");
-        }
-        public override void Commit()
-        {
-        }
+        public override void Cancel() => throw new Exception("dkdkdk");
+        public override void Commit() { }
     }
     [Description("第2步")]
     class Saga2 : SagaUnit<LocalState>
     {
-        public override void Cancel()
-        {
-        }
-        public override void Commit()
-        {
-        }
+        public override void Cancel() { }
+        public override void Commit() { }
     }
     [Description("第3步")]
     class Saga3 : SagaUnit<LocalState>
     {
-        public override void Cancel()
-        {
-        }
-        public override void Commit()
-        {
-            throw new Exception("xxx");
-        }
+        public override void Cancel() { }
+        public override void Commit() => throw new Exception("xxx");
     }
 }
