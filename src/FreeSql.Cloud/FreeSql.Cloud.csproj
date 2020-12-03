@@ -22,8 +22,8 @@
 
 	<ItemGroup>
 		<PackageReference Include="FreeSql" Version="2.0.102" />
-		<PackageReference Include="IdleBus" Version="1.5.1" />
-		<PackageReference Include="IdleScheduler" Version="1.5.1" />
+		<PackageReference Include="IdleBus" Version="1.5.2" />
+		<PackageReference Include="IdleScheduler" Version="1.5.2" />
 		<PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
 	</ItemGroup>
 	
