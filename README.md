@@ -55,7 +55,7 @@ fsql.Change(DbEnum.db3).Select<T>();
 
 1、简介
 
-FreeSqlCloud 提供 TCC/Saga 分布式事务调度，提供遇错重试、程序重启不影响的管理功能。
+FreeSqlCloud 提供 TCC/Saga 分布式事务调度，遇错重试、程序重启不影响的事务单元管理功能。
 
 2、唯一标识
 
