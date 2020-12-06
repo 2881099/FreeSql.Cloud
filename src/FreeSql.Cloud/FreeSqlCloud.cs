@@ -56,8 +56,13 @@ namespace FreeSql
 
                     _ormMaster.CodeFirst.ConfigEntity<TccMasterInfo>(a => a.Name($"tcc_{DistributeKey}"));
                     _ormMaster.CodeFirst.SyncStructure<TccMasterInfo>();
+                    _ormMaster.CodeFirst.ConfigEntity<TccUnitInfo>(a => a.Name($"tcc_{DistributeKey}_unit"));
+                    _ormMaster.CodeFirst.SyncStructure<TccUnitInfo>();
+
                     _ormMaster.CodeFirst.ConfigEntity<SagaMasterInfo>(a => a.Name($"saga_{DistributeKey}"));
                     _ormMaster.CodeFirst.SyncStructure<SagaMasterInfo>();
+                    _ormMaster.CodeFirst.ConfigEntity<SagaUnitInfo>(a => a.Name($"saga_{DistributeKey}_unit"));
+                    _ormMaster.CodeFirst.SyncStructure<SagaUnitInfo>();
 
                     #region 加载历史未未成 TCC 事务
                     var tccPendings = _ormMaster.Select<TccMasterInfo>()
@@ -79,11 +84,6 @@ namespace FreeSql
                     if (_distributeTraceEnable) _distributedTraceCall($"成功加载历史未完成 SAGA 事务 {sagaPendings.Count} 个");
                     #endregion
                 }
-                var fsql = _ib.Get(dbkey);
-                fsql.CodeFirst.ConfigEntity<TccUnitInfo>(a => a.Name($"tcc_{DistributeKey}_unit"));
-                fsql.CodeFirst.SyncStructure<TccUnitInfo>();
-                fsql.CodeFirst.ConfigEntity<SagaUnitInfo>(a => a.Name($"saga_{DistributeKey}_unit"));
-                fsql.CodeFirst.SyncStructure<SagaUnitInfo>();
             }
             return this;
         }

@@ -1,6 +1,7 @@
 ﻿using FreeSql.Cloud.Tcc;
 using System;
 using System.Data.Common;
+using System.Threading.Tasks;
 
 namespace FreeSql
 {
@@ -12,25 +13,19 @@ namespace FreeSql
 
     public abstract class TccUnit<TState> : ITccUnit, ITccUnitSetter
     {
-        protected DbTransaction Transaction { get; private set; }
-        protected IFreeSql Fsql { get; private set; }
         protected TccUnitInfo Unit { get; private set; }
         protected TState State { get; private set; }
 
+#if net40
         public abstract void Try();
         public abstract void Confirm();
         public abstract void Cancel();
+#else
+        public abstract Task Try();
+        public abstract Task Confirm();
+        public abstract Task Cancel();
+#endif
 
-        ITccUnitSetter ITccUnitSetter.SetTransaction(DbTransaction value)
-        {
-            Transaction = value;
-            return this;
-        }
-        ITccUnitSetter ITccUnitSetter.SetOrm(IFreeSql value)
-        {
-            Fsql = value;
-            return this;
-        }
         ITccUnitSetter ITccUnitSetter.SetUnit(TccUnitInfo value)
         {
             Unit = value;
@@ -51,17 +46,20 @@ namespace FreeSql.Cloud.Tcc
 {
     public interface ITccUnit
     {
+#if net40
         void Try();
         void Confirm();
         void Cancel();
+#else
+        Task Try();
+        Task Confirm();
+        Task Cancel();
+#endif
     }
 
     public interface ITccUnitSetter
     {
-        ITccUnitSetter SetTransaction(DbTransaction value);
-        ITccUnitSetter SetOrm(IFreeSql value);
         ITccUnitSetter SetUnit(TccUnitInfo value);
-
         ITccUnitSetter SetState(object value);
         bool StateIsValued { get; }
     }

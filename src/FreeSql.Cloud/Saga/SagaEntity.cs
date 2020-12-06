@@ -16,9 +16,6 @@ namespace FreeSql.Cloud.Saga
         [Column(Name = "total")]
         public int Total { get; set; }
 
-        [Column(Name = "units", StringLength = -1)]
-        public string Units { get; set; }
-
         [Column(Name = "create_time", ServerTime = DateTimeKind.Utc, CanUpdate = false)]
         public DateTime CreateTime { get; set; } = DateTime.UtcNow;
 
@@ -57,14 +54,8 @@ namespace FreeSql.Cloud.Saga
         [Column(Name = "stage", MapType = typeof(string), StringLength = 8)]
         public SagaUnitStage Stage { get; set; }
 
-        [Column(Name = "db_key")]
-        public string DbKey { get; set; }
-
         [Column(Name = "type_name")]
         public string TypeName { get; set; }
-
-        [Column(Name = "isolation_level", MapType = typeof(string), StringLength = 16)]
-        public IsolationLevel? IsolationLevel { get; set; }
 
         [Column(Name = "state", StringLength = - 1)]
         public string State { get; set; }
@@ -76,10 +67,4 @@ namespace FreeSql.Cloud.Saga
         public DateTime CreateTime { get; set; } = DateTime.UtcNow;
     }
     public enum SagaUnitStage { Commit, Cancel }
-
-    public class SagaUnitLiteInfo
-    {
-        public string DbKey { get; set; }
-        public string TypeName { get; set; }
-    }
 }

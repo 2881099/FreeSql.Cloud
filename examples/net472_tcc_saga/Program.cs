@@ -33,9 +33,9 @@ namespace net472_tcc_saga
                 var tid = Guid.NewGuid().ToString();
                 fsql
                     .StartTcc(tid, "创建订单")
-                    .Then<Tcc1>(DbEnum.db1)
-                    .Then<Tcc2>(DbEnum.db2)
-                    .Then<Tcc3>(DbEnum.db3)
+                    .Then<Tcc1>()
+                    .Then<Tcc2>()
+                    .Then<Tcc3>()
                     .Execute();
 
                 tid = Guid.NewGuid().ToString();
@@ -45,18 +45,18 @@ namespace net472_tcc_saga
                         MaxRetryCount = 10,
                         RetryInterval = TimeSpan.FromSeconds(10)
                     })
-                .Then<Tcc1>(DbEnum.db1, new LocalState { Id = 1, Name = "tcc1" })
-                .Then<Tcc2>(DbEnum.db2)
-                .Then<Tcc3>(DbEnum.db3, new LocalState { Id = 3, Name = "tcc3" })
+                .Then<Tcc1>(new LocalState { Id = 1, Name = "tcc1" })
+                .Then<Tcc2>()
+                .Then<Tcc3>(new LocalState { Id = 3, Name = "tcc3" })
                 .Execute();
 
                 //Saga
                 tid = Guid.NewGuid().ToString();
                 fsql
                     .StartSaga(tid, "注册用户")
-                    .Then<Saga1>(DbEnum.db1)
-                    .Then<Saga2>(DbEnum.db2)
-                    .Then<Saga3>(DbEnum.db3)
+                    .Then<Saga1>()
+                    .Then<Saga2>()
+                    .Then<Saga3>()
                     .Execute();
 
                 tid = Guid.NewGuid().ToString();
@@ -66,9 +66,9 @@ namespace net472_tcc_saga
                         MaxRetryCount = 5,
                         RetryInterval = TimeSpan.FromSeconds(5)
                     })
-                    .Then<Saga1>(DbEnum.db1, new LocalState { Id = 1, Name = "tcc1" })
-                    .Then<Saga2>(DbEnum.db2)
-                    .Then<Saga3>(DbEnum.db3, new LocalState { Id = 3, Name = "tcc3" })
+                    .Then<Saga1>(new LocalState { Id = 1, Name = "tcc1" })
+                    .Then<Saga2>()
+                    .Then<Saga3>(new LocalState { Id = 3, Name = "tcc3" })
                     .Execute();
 
                 Console.ReadKey();

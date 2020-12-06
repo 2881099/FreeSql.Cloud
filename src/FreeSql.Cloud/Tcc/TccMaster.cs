@@ -31,10 +31,10 @@ namespace FreeSql.Cloud.Tcc
             };
         }
 
-        public TccMaster<TDBKey> Then<TUnit>(TDBKey dbkey) where TUnit : ITccUnit => Then(typeof(TUnit), dbkey, null);
-        public TccMaster<TDBKey> Then<TUnit>(TDBKey dbkey, object state, IsolationLevel? isolationLevel = null) where TUnit : ITccUnit => Then(typeof(TUnit), dbkey, state, isolationLevel);
+        public TccMaster<TDBKey> Then<TUnit>() where TUnit : ITccUnit => Then(typeof(TUnit), null);
+        public TccMaster<TDBKey> Then<TUnit>(object state) where TUnit : ITccUnit => Then(typeof(TUnit), state);
 
-        TccMaster<TDBKey> Then(Type tccUnitType, TDBKey dbkey, object state, IsolationLevel? isolationLevel = null)
+        TccMaster<TDBKey> Then(Type tccUnitType, object state)
         {
             if (tccUnitType == null) throw new ArgumentNullException(nameof(tccUnitType));
             var unitTypeBase = typeof(TccUnit<>);
@@ -43,7 +43,6 @@ namespace FreeSql.Cloud.Tcc
             if (unitTypeBase.IsAssignableFrom(tccUnitType) == false) throw new ArgumentException($"{tccUnitType.DisplayCsharp(false)} 必须继承 {unitTypeBase.DisplayCsharp(false)}");
             var unitCtors = tccUnitType.GetConstructors();
             if (unitCtors.Length != 1 && unitCtors[0].GetParameters().Length > 0) throw new ArgumentException($"{tccUnitType.FullName} 不能使用构造函数");
-            if (_cloud._ib.Exists(dbkey) == false) throw new KeyNotFoundException($"{dbkey} 不存在");
 
             var unitTypeConved = Type.GetType(tccUnitType.AssemblyQualifiedName);
             if (unitTypeConved == null) throw new ArgumentException($"{tccUnitType.FullName} 无效");
@@ -52,10 +51,8 @@ namespace FreeSql.Cloud.Tcc
             _thenUnits.Add(unit);
             _thenUnitInfos.Add(new TccUnitInfo
             {
-                DbKey = dbkey.ToInvariantCultureToString(),
-                Description = unitTypeConved.GetDescription(), //unitTypeConved.GetCustomAttribute<DescriptionAttribute>()?.Description,
+                Description = unitTypeConved.GetDescription(),
                 Index = _thenUnitInfos.Count + 1,
-                IsolationLevel = isolationLevel,
                 Stage = TccUnitStage.Try,
                 State = state == null ? null : Newtonsoft.Json.JsonConvert.SerializeObject(state),
                 StateTypeName = state?.GetType().AssemblyQualifiedName,
@@ -80,14 +77,12 @@ namespace FreeSql.Cloud.Tcc
         {
             if (_cloud._ib.Quantity == 0) throw new ArgumentException($"必须注册可用的数据库");
             var units = _thenUnits.ToArray();
-            var unitOrms = _thenUnitInfos.Select(a => _cloud._ib.Get(a.DbKey.ConvertTo<TDBKey>())).ToArray();
 
             var masterInfo = new TccMasterInfo
             {
                 Tid = _tid,
                 Title = _title,
                 Total = _thenUnitInfos.Count,
-                Units = Newtonsoft.Json.JsonConvert.SerializeObject(_thenUnitInfos.Select(a => new { a.DbKey, a.TypeName })),
                 Status = TccMasterStatus.Pending,
                 RetryCount = 0,
                 MaxRetryCount = _options.MaxRetryCount,
@@ -106,21 +101,26 @@ namespace FreeSql.Cloud.Tcc
             {
                 try
                 {
+                    var ormMaster = _cloud._ormMaster;
 #if net40
-                    using (var conn = unitOrms[idx].Ado.MasterPool.Get())
+                    using (var conn = ormMaster.Ado.MasterPool.Get())
 #else
-                    using (var conn = await unitOrms[idx].Ado.MasterPool.GetAsync())
+                    using (var conn = await ormMaster.Ado.MasterPool.GetAsync())
 #endif
                     {
-                        var tran = _thenUnitInfos[idx].IsolationLevel == null ? conn.Value.BeginTransaction() : conn.Value.BeginTransaction(_thenUnitInfos[idx].IsolationLevel.Value);
+                        var tran = conn.Value.BeginTransaction();
                         var tranIsCommited = false;
                         try
                         {
-                            var fsql = FreeSqlTransaction.Create(unitOrms[idx], () => tran);
+                            (units[idx] as ITccUnitSetter)?.SetUnit(_thenUnitInfos[idx]);
+                            var fsql = FreeSqlTransaction.Create(ormMaster, () => tran);
+#if net40
                             fsql.Insert(_thenUnitInfos[idx]).ExecuteAffrows();
-                            (units[idx] as ITccUnitSetter)?.SetTransaction(tran).SetOrm(fsql).SetUnit(_thenUnitInfos[idx]);
-
                             units[idx].Try();
+#else
+                            await fsql.Insert(_thenUnitInfos[idx]).ExecuteAffrowsAsync();
+                            await units[idx].Try();
+#endif
                             tran.Commit();
                             tranIsCommited = true;
                             unitInfos.Add(_thenUnitInfos[idx]);
@@ -141,9 +141,9 @@ namespace FreeSql.Cloud.Tcc
                 }
             }
 #if net40
-            return ConfimCancel(_cloud, masterInfo, unitInfos, units, unitOrms, true);
+            return ConfimCancel(_cloud, masterInfo, unitInfos, units, true);
 #else
-            return await ConfimCancelAsync(_cloud, masterInfo, unitInfos, units, unitOrms, true);
+            return await ConfimCancelAsync(_cloud, masterInfo, unitInfos, units,  true);
 #endif
         }
 
@@ -160,56 +160,51 @@ namespace FreeSql.Cloud.Tcc
         static void ConfimCancel(FreeSqlCloud<TDBKey> cloud, string tid, bool retry)
         {
             var masterInfo = cloud._ormMaster.Select<TccMasterInfo>().Where(a => a.Tid == tid && a.Status == TccMasterStatus.Pending && a.RetryCount <= a.MaxRetryCount).First();
+            if (masterInfo == null) return;
+            var unitInfos = cloud._ormMaster.Select<TccUnitInfo>().Where(a => a.Tid == tid).OrderBy(a => a.Index).ToList();
 #else
         async static Task ConfimCancelAsync(FreeSqlCloud<TDBKey> cloud, string tid, bool retry)
         {
             var masterInfo = await cloud._ormMaster.Select<TccMasterInfo>().Where(a => a.Tid == tid && a.Status == TccMasterStatus.Pending && a.RetryCount <= a.MaxRetryCount).FirstAsync();
-#endif
             if (masterInfo == null) return;
-            var unitLiteInfos = Newtonsoft.Json.JsonConvert.DeserializeObject<TccUnitLiteInfo[]>(masterInfo.Units);
-            if (unitLiteInfos?.Length != masterInfo.Total)
-            {
-                if (cloud._distributeTraceEnable) cloud._distributedTraceCall($"TCC ({masterInfo.Tid}, {masterInfo.Title}) Data error, cannot deserialize Units");
-                throw new ArgumentException($"TCC ({masterInfo.Tid}, {masterInfo.Title}) Data error, cannot deserialize Units");
-            }
-            var units = unitLiteInfos.Select(tl =>
+            var unitInfos = await cloud._ormMaster.Select<TccUnitInfo>().Where(a => a.Tid == tid).OrderBy(a => a.Index).ToListAsync();
+#endif
+            var units = unitInfos.Select(unitInfo =>
             {
                 try
                 {
-                    var unitTypeDefault = Type.GetType(tl.TypeName).CreateInstanceGetDefaultValue() as ITccUnit;
+                    var unitTypeDefault = Type.GetType(unitInfo.TypeName).CreateInstanceGetDefaultValue() as ITccUnit;
                     if (unitTypeDefault == null)
                     {
-                        if (cloud._distributeTraceEnable) cloud._distributedTraceCall($"TCC ({masterInfo.Tid}, {masterInfo.Title}) Data error, cannot create as ITccUnit, {tl.TypeName}");
-                        throw new ArgumentException($"TCC ({masterInfo.Tid}, {masterInfo.Title}) Data error, cannot create as ITccUnit, {tl.TypeName}");
+                        if (cloud._distributeTraceEnable) cloud._distributedTraceCall($"TCC ({masterInfo.Tid}, {masterInfo.Title}) Data error, cannot create as ITccUnit, {unitInfo.TypeName}");
+                        throw new ArgumentException($"TCC ({masterInfo.Tid}, {masterInfo.Title}) Data error, cannot create as ITccUnit, {unitInfo.TypeName}");
                     }
                     return unitTypeDefault;
                 }
                 catch
                 {
-                    if (cloud._distributeTraceEnable) cloud._distributedTraceCall($"TCC ({masterInfo.Tid}, {masterInfo.Title}) Data error, cannot create as ITccUnit, {tl.TypeName}");
-                    throw new ArgumentException($"TCC ({masterInfo.Tid}, {masterInfo.Title}) Data error, cannot create as ITccUnit, {tl.TypeName}");
+                    if (cloud._distributeTraceEnable) cloud._distributedTraceCall($"TCC ({masterInfo.Tid}, {masterInfo.Title}) Data error, cannot create as ITccUnit, {unitInfo.TypeName}");
+                    throw new ArgumentException($"TCC ({masterInfo.Tid}, {masterInfo.Title}) Data error, cannot create as ITccUnit, {unitInfo.TypeName}");
                 }
             })
             .ToArray();
-            var unitOrms = unitLiteInfos.Select(a => cloud._ib.Get(a.DbKey.ConvertTo<TDBKey>())).ToArray();
-            var unitInfos = unitOrms.Distinct().SelectMany(z => z.Select<TccUnitInfo>().Where(a => a.Tid == tid).ToList()).OrderBy(a => a.Index).ToList();
 
 #if net40
-            ConfimCancel(cloud, masterInfo, unitInfos, units, unitOrms, retry);
+            ConfimCancel(cloud, masterInfo, unitInfos, units, retry);
 #else
-            await ConfimCancelAsync(cloud, masterInfo, unitInfos, units, unitOrms, retry);
+            await ConfimCancelAsync(cloud, masterInfo, unitInfos, units, retry);
 #endif
         }
 
 #if net40
-        static bool? ConfimCancel(FreeSqlCloud<TDBKey> cloud, TccMasterInfo masterInfo, List<TccUnitInfo> unitInfos, ITccUnit[] units, IFreeSql[] unitOrms, bool retry)
+        static bool? ConfimCancel(FreeSqlCloud<TDBKey> cloud, TccMasterInfo masterInfo, List<TccUnitInfo> unitInfos, ITccUnit[] units, bool retry)
 #else
-        async static Task<bool?> ConfimCancelAsync(FreeSqlCloud<TDBKey> cloud, TccMasterInfo masterInfo, List<TccUnitInfo> unitInfos, ITccUnit[] units, IFreeSql[] unitOrms, bool retry)
+        async static Task<bool?> ConfimCancelAsync(FreeSqlCloud<TDBKey> cloud, TccMasterInfo masterInfo, List<TccUnitInfo> unitInfos, ITccUnit[] units, bool retry)
 #endif
         {
             var isConfirm = unitInfos.Count == masterInfo.Total;
             var successCount = 0;
-            for (var idx = units.Length - 1; idx >= 0; idx--)
+            for (var idx = masterInfo.Total - 1; idx >= 0; idx--)
             {
                 var unitInfo = unitInfos.Where(tt => tt.Index == idx + 1 && tt.Stage == TccUnitStage.Try).FirstOrDefault();
                 try
@@ -218,37 +213,35 @@ namespace FreeSql.Cloud.Tcc
                     {
                         if ((units[idx] as ITccUnitSetter)?.StateIsValued != true)
                             SetTccState(units[idx], unitInfo);
+                        var ormMaster = cloud._ormMaster;
 #if net40
-                        using (var conn = unitOrms[idx].Ado.MasterPool.Get())
+                        using (var conn = cloud.Ado.MasterPool.Get())
 #else
-                        using (var conn = await unitOrms[idx].Ado.MasterPool.GetAsync())
+                        using (var conn = await cloud.Ado.MasterPool.GetAsync())
 #endif
                         {
-                            var tran = unitInfo.IsolationLevel == null ? conn.Value.BeginTransaction() : conn.Value.BeginTransaction(unitInfo.IsolationLevel.Value);
+                            var tran = conn.Value.BeginTransaction();
                             var tranIsCommited = false;
                             try
                             {
-                                var fsql = FreeSqlTransaction.Create(unitOrms[idx], () => tran);
-                                (units[idx] as ITccUnitSetter)?.SetTransaction(tran).SetOrm(fsql).SetUnit(unitInfo);
-
-                                var affrows =
+                                var fsql = FreeSqlTransaction.Create(ormMaster, () => tran);
+                                (units[idx] as ITccUnitSetter)?.SetUnit(unitInfo);
+                                var update = fsql.Update<TccUnitInfo>()
+                                    .Where(a => a.Tid == masterInfo.Tid && a.Index == idx + 1 && a.Stage == TccUnitStage.Try)
+                                    .Set(a => a.Stage, isConfirm ? TccUnitStage.Confirm : TccUnitStage.Cancel);
 #if net40
-#else
-                                    await
-#endif
-                                    fsql.Update<TccUnitInfo>()
-                                        .Where(a => a.Tid == masterInfo.Tid && a.Index == idx + 1 && a.Stage == TccUnitStage.Try)
-                                        .Set(a => a.Stage, isConfirm ? TccUnitStage.Confirm : TccUnitStage.Cancel)
-#if net40
-                                        .ExecuteAffrows();
-#else
-                                        .ExecuteAffrowsAsync();
-#endif
-                                if (affrows == 1)
+                                if (update.ExecuteAffrows() == 1)
                                 {
                                     if (isConfirm) units[idx].Confirm();
                                     else units[idx].Cancel();
                                 }
+#else
+                                if (await update.ExecuteAffrowsAsync() == 1)
+                                {
+                                    if (isConfirm) await units[idx].Confirm();
+                                    else await units[idx].Cancel();
+                                }
+#endif
                                 tran.Commit();
                                 tranIsCommited = true;
                             }
@@ -268,41 +261,32 @@ namespace FreeSql.Cloud.Tcc
                         if (cloud._distributeTraceEnable) cloud._distributedTraceCall($"TCC ({masterInfo.Tid}, {masterInfo.Title}) Unit{unitInfo.Index}{(string.IsNullOrWhiteSpace(unitInfo.Description) ? "" : $"({unitInfo.Description})")} {(isConfirm ? "CONFIRM" : "CANCEL")} failed{(masterInfo.RetryCount > 0 ? $" after {masterInfo.RetryCount} retries" : "")}, -ERR {ex.Message}\r\n    State: {unitInfo.State}\r\n    Type:  {unitInfo.TypeName}");
                 }
             }
-            if (successCount == units.Length)
+            if (successCount == masterInfo.Total)
             {
-#if net40
-#else
-                await
-#endif
-                cloud._ormMaster.Update<TccMasterInfo>()
+                var update = cloud._ormMaster.Update<TccMasterInfo>()
                     .Where(a => a.Tid == masterInfo.Tid && a.Status == TccMasterStatus.Pending)
                     .Set(a => a.RetryCount + 1)
                     .Set(a => a.RetryTime == DateTime.UtcNow)
                     .Set(a => a.Status, isConfirm ? TccMasterStatus.Confirmed : TccMasterStatus.Canceled)
-                    .Set(a => a.FinishTime == DateTime.UtcNow)
+                    .Set(a => a.FinishTime == DateTime.UtcNow);
 #if net40
-                    .ExecuteAffrows();
+                update.ExecuteAffrows();
 #else
-                    .ExecuteAffrowsAsync();
+                await update.ExecuteAffrowsAsync();
 #endif
                 if (cloud._distributeTraceEnable) cloud._distributedTraceCall($"TCC ({masterInfo.Tid}, {masterInfo.Title}) Completed, all units {(isConfirm ? "CONFIRM" : "CANCEL")} successfully{(masterInfo.RetryCount > 0 ? $" after {masterInfo.RetryCount} retries" : "")}");
                 return isConfirm;
             }
             else
             {
-                var affrows =
+                var update = cloud._ormMaster.Update<TccMasterInfo>()
+                    .Where(a => a.Tid == masterInfo.Tid && a.Status == TccMasterStatus.Pending && a.RetryCount < a.MaxRetryCount)
+                    .Set(a => a.RetryCount + 1)
+                    .Set(a => a.RetryTime == DateTime.UtcNow);
 #if net40
+                var affrows = update.ExecuteAffrows();
 #else
-                    await
-#endif
-                    cloud._ormMaster.Update<TccMasterInfo>()
-                        .Where(a => a.Tid == masterInfo.Tid && a.Status == TccMasterStatus.Pending && a.RetryCount < a.MaxRetryCount)
-                        .Set(a => a.RetryCount + 1)
-                        .Set(a => a.RetryTime == DateTime.UtcNow)
-#if net40
-                        .ExecuteAffrows();
-#else
-                        .ExecuteAffrowsAsync();
+                var affrows = await update.ExecuteAffrowsAsync();
 #endif
                 if (affrows == 1)
                 {
@@ -314,17 +298,13 @@ namespace FreeSql.Cloud.Tcc
                 }
                 else
                 {
-#if net40
-#else
-                    await
-#endif
-                    cloud._ormMaster.Update<TccMasterInfo>()
+                    update = cloud._ormMaster.Update<TccMasterInfo>()
                         .Where(a => a.Tid == masterInfo.Tid && a.Status == TccMasterStatus.Pending)
-                        .Set(a => a.Status, TccMasterStatus.ManualOperation)
+                        .Set(a => a.Status, TccMasterStatus.ManualOperation);
 #if net40
-                        .ExecuteAffrows();
+                    update.ExecuteAffrows();
 #else
-                        .ExecuteAffrowsAsync();
+                    await update.ExecuteAffrowsAsync();
 #endif
                     if (cloud._distributeTraceEnable) cloud._distributedTraceCall($"TCC ({masterInfo.Tid}, {masterInfo.Title}) Not completed, waiting for manual operation 【人工干预】");
                 }

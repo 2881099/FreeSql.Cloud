@@ -1,6 +1,7 @@
 ﻿using FreeSql;
 using System;
 using System.ComponentModel;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace net40_tcc_saga
@@ -33,9 +34,9 @@ namespace net40_tcc_saga
                 var tid = Guid.NewGuid().ToString();
                 fsql
                     .StartTcc(tid, "创建订单")
-                    .Then<Tcc1>(DbEnum.db1)
-                    .Then<Tcc2>(DbEnum.db2)
-                    .Then<Tcc3>(DbEnum.db3)
+                    .Then<Tcc1>()
+                    .Then<Tcc2>()
+                    .Then<Tcc3>()
                     .Execute();
 
                 tid = Guid.NewGuid().ToString();
@@ -45,18 +46,18 @@ namespace net40_tcc_saga
                         MaxRetryCount = 10,
                         RetryInterval = TimeSpan.FromSeconds(10)
                     })
-                .Then<Tcc1>(DbEnum.db1, new LocalState { Id = 1, Name = "tcc1" })
-                .Then<Tcc2>(DbEnum.db2)
-                .Then<Tcc3>(DbEnum.db3, new LocalState { Id = 3, Name = "tcc3" })
+                .Then<Tcc1>(new LocalState { Id = 1, Name = "tcc1" })
+                .Then<Tcc2>()
+                .Then<Tcc3>(new LocalState { Id = 3, Name = "tcc3" })
                 .Execute();
 
                 //Saga
                 tid = Guid.NewGuid().ToString();
                 fsql
                     .StartSaga(tid, "注册用户")
-                    .Then<Saga1>(DbEnum.db1)
-                    .Then<Saga2>(DbEnum.db2)
-                    .Then<Saga3>(DbEnum.db3)
+                    .Then<Saga1>()
+                    .Then<Saga2>()
+                    .Then<Saga3>()
                     .Execute();
 
                 tid = Guid.NewGuid().ToString();
@@ -66,14 +67,15 @@ namespace net40_tcc_saga
                         MaxRetryCount = 5,
                         RetryInterval = TimeSpan.FromSeconds(5)
                     })
-                    .Then<Saga1>(DbEnum.db1, new LocalState { Id = 1, Name = "tcc1" })
-                    .Then<Saga2>(DbEnum.db2)
-                    .Then<Saga3>(DbEnum.db3, new LocalState { Id = 3, Name = "tcc3" })
-                    .Execute();
-
+                    .Then<Saga1>(new LocalState { Id = 1, Name = "tcc1" })
+                    .Then<Saga2>()
+                    .Then<Saga3>(new LocalState { Id = 3, Name = "tcc3" })
+                    .Execute()
+;
                 Console.ReadKey();
             }
         }
+
     }
 
     class LocalState
@@ -92,9 +94,9 @@ namespace net40_tcc_saga
     [Description("第2步")]
     class Tcc2 : TccUnit<LocalState>
     {
-        public override void Cancel() => Fsql.Ado.ExecuteNonQuery("update user set xx = xx - 1 where id = @id", new { State.Id });
-        public override void Confirm() => Fsql.Ado.ExecuteNonQuery("update order set status = 成功 where id = xxx");
-        public override void Try() => Fsql.Ado.ExecuteNonQuery("update user set xx = xx + 1 where id = @id", new { State.Id });
+        public override void Cancel() { }
+        public override void Confirm() { }
+        public override void Try() { }
     }
     [Description("第3步")]
     class Tcc3 : TccUnit<LocalState>

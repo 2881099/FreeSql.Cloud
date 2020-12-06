@@ -1,6 +1,7 @@
 ﻿using FreeSql.Cloud.Saga;
 using System;
 using System.Data.Common;
+using System.Threading.Tasks;
 
 namespace FreeSql
 {
@@ -12,24 +13,17 @@ namespace FreeSql
 
     public abstract class SagaUnit<TState> : ISagaUnit, ISagaUnitSetter
     {
-        protected DbTransaction Transaction { get; private set; }
-        protected IFreeSql Fsql { get; private set; }
         protected SagaUnitInfo Unit { get; private set; }
         protected TState State { get; private set; }
 
+#if net40
         public abstract void Commit();
         public abstract void Cancel();
+#else
+        public abstract Task Commit();
+        public abstract Task Cancel();
+#endif
 
-        ISagaUnitSetter ISagaUnitSetter.SetTransaction(DbTransaction value)
-        {
-            Transaction = value;
-            return this;
-        }
-        ISagaUnitSetter ISagaUnitSetter.SetOrm(IFreeSql value)
-        {
-            Fsql = value;
-            return this;
-        }
         ISagaUnitSetter ISagaUnitSetter.SetUnit(SagaUnitInfo value)
         {
             Unit = value;
@@ -50,16 +44,18 @@ namespace FreeSql.Cloud.Saga
 {
     public interface ISagaUnit
     {
+#if net40
         void Commit();
         void Cancel();
+#else
+        Task Commit();
+        Task Cancel();
+#endif
     }
 
     public interface ISagaUnitSetter
     {
-        ISagaUnitSetter SetTransaction(DbTransaction value);
-        ISagaUnitSetter SetOrm(IFreeSql value);
         ISagaUnitSetter SetUnit(SagaUnitInfo value);
-
         ISagaUnitSetter SetState(object value);
         bool StateIsValued { get; }
     }
