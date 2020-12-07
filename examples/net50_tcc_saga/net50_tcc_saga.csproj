@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
@@ -6,7 +6,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="FreeSql.Provider.Sqlite" Version="2.0.103" />
+		<PackageReference Include="FreeSql.Provider.Sqlite" Version="2.0.104" />
 	</ItemGroup>
 
 	<ItemGroup>
