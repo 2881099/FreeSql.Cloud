@@ -25,9 +25,24 @@ namespace net50_webapi_idlebus
         public void ConfigureServices(IServiceCollection services)
         {
             var fsql = new MultiFreeSql();
-            fsql.Register("db1", () => new FreeSqlBuilder().UseConnectionString(DataType.Sqlite, "data source=db1.db").Build());
-            fsql.Register("db2", () => new FreeSqlBuilder().UseConnectionString(DataType.Sqlite, "data source=db2.db").Build());
-            fsql.Register("db3", () => new FreeSqlBuilder().UseConnectionString(DataType.Sqlite, "data source=db3.db").Build());
+            fsql.Register("db1", () =>
+            {
+                var db = new FreeSqlBuilder().UseConnectionString(DataType.Sqlite, "data source=db1.db").Build();
+                //db.Aop.CommandAfter += ...
+                return db;
+            });
+            fsql.Register("db2", () =>
+            {
+                var db = new FreeSqlBuilder().UseConnectionString(DataType.Sqlite, "data source=db2.db").Build();
+                //db.Aop.CommandAfter += ...
+                return db;
+            });
+            fsql.Register("db3", () =>
+            {
+                var db = new FreeSqlBuilder().UseConnectionString(DataType.Sqlite, "data source=db3.db").Build();
+                //db.Aop.CommandAfter += ...
+                return db;
+            });
 
             services.AddSingleton<IFreeSql>(fsql);
             services.AddControllers();

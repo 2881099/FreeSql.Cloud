@@ -15,8 +15,8 @@ namespace net50_webapi_idlebus
     {
         internal TDBKey _dbkeyMaster;
         internal AsyncLocal<TDBKey> _dbkeyCurrent = new AsyncLocal<TDBKey>();
-        internal IFreeSql _ormMaster => _ib.Get(_dbkeyMaster);
-        internal IFreeSql _ormCurrent => _ib.Get(object.Equals(_dbkeyCurrent.Value, default(TDBKey)) ? _dbkeyMaster : _dbkeyCurrent.Value);
+        IFreeSql _ormMaster => _ib.Get(_dbkeyMaster);
+        IFreeSql _ormCurrent => _ib.Get(object.Equals(_dbkeyCurrent.Value, default(TDBKey)) ? _dbkeyMaster : _dbkeyCurrent.Value);
         internal IdleBus<TDBKey, IFreeSql> _ib;
 
         public MultiFreeSql()
