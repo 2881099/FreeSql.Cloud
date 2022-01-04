@@ -37,11 +37,11 @@ namespace FreeSql
             _ib.Notice += (_, __) => { };
         }
 
-        public FreeSqlCloud<TDBKey> Change(TDBKey dbkey)
+        public IFreeSql Change(TDBKey dbkey)
         {
             if (_distributeTraceEnable) _distributedTraceCall($"数据库切换 {dbkey}");
             _dbkeyCurrent.Value = dbkey;
-            return this;
+            return new FreeSqlCloundSnapshot<TDBKey>(this, dbkey);
         }
 
         public FreeSqlCloud<TDBKey> Register(TDBKey dbkey, Func<IFreeSql> create)

@@ -21,10 +21,11 @@ namespace net50_webapi_idlebus
         }
 
         public IConfiguration Configuration { get; }
+        public IFreeSql fsql { get; private set; }
 
         public void ConfigureServices(IServiceCollection services)
         {
-            var fsql = new MultiFreeSql();
+            fsql = new MultiFreeSql();
             fsql.Register("db1", () =>
             {
                 var db = new FreeSqlBuilder().UseConnectionString(DataType.Sqlite, "data source=db1.db").Build();
@@ -40,7 +41,11 @@ namespace net50_webapi_idlebus
             fsql.Register("db3", () =>
             {
                 var db = new FreeSqlBuilder().UseConnectionString(DataType.Sqlite, "data source=db3.db").Build();
-                //db.Aop.CommandAfter += ...
+                db.Aop.CommandAfter += (_, e) =>
+                {
+                    var logger = _serviceProvider.GetService<ILogger<Startup>>();
+                    logger.LogDebug(e.Command.CommandText);
+                };
                 return db;
             });
 
@@ -48,10 +53,28 @@ namespace net50_webapi_idlebus
             services.AddControllers();
         }
 
+        IServiceProvider _serviceProvider;
+
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            _serviceProvider = app.ApplicationServices;
+
             if (env.IsDevelopment())
                 app.UseDeveloperExceptionPage();
+
+            app.Use(async (context, next) =>
+            {
+                fsql.Change("db2");
+
+                try
+                {
+                    await next();
+                }
+                finally
+                {
+                    fsql.Change("db1");
+                }
+            });
 
             app.UseRouting();
             app.UseAuthorization();

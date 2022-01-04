@@ -52,10 +52,10 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="FreeSql">
-      <Version>2.0.105</Version>
+      <Version>3.0.100</Version>
     </PackageReference>
     <PackageReference Include="FreeSql.Provider.Sqlite">
-      <Version>2.0.105</Version>
+      <Version>3.0.100</Version>
     </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
