@@ -27,46 +27,27 @@ namespace net50_webapi_tenant
 
         public override ISelect<T1> CreateSelectProvider<T1>(object dywhere)
         {
-            var sel = _ormCurrent.Select<T1>();
+            var sel = (_ormCurrent as BaseDbProvider).CreateSelectProvider<T1>(dywhere);
 
             if (_ib.Quantity > 1) return sel; //多 key
             return sel.AsTable((type, oldname) => GetTableName(type, oldname));
         }
-
-        public ISelect<T1> Select<T1>() where T1 : class
+        public override IDelete<T1> CreateDeleteProvider<T1>(object dywhere)
         {
-            var sel = _ormCurrent.Select<T1>();
-
-            if (_ib.Quantity > 1) return sel; //多 key
-            return sel.AsTable((type, oldname) => GetTableName(type, oldname));
-        }
-        public ISelect<T1> Select<T1>(object dywhere) where T1 : class => Select<T1>().WhereDynamic(dywhere);
-
-        public IDelete<T1> Delete<T1>() where T1 : class
-        {
-            var del = _ormCurrent.Delete<T1>();
+            var del = (_ormCurrent as BaseDbProvider).CreateDeleteProvider<T1>(dywhere);
             return del.AsTable(oldname => GetTableName((del as DeleteProvider<T1>)?._table.Type, oldname));
         }
-        public IDelete<T1> Delete<T1>(object dywhere) where T1 : class => Delete<T1>().WhereDynamic(dywhere);
-
-        public IUpdate<T1> Update<T1>() where T1 : class
+        public override IInsert<T1> CreateInsertProvider<T1>()
         {
-            var up = _ormCurrent.Update<T1>();
+            var ins = (_ormCurrent as BaseDbProvider).CreateInsertProvider<T1>();
+            return ins.AsTable(oldname => GetTableName((ins as InsertProvider<T1>)?._table.Type, oldname));
+        }
+        public override IUpdate<T1> CreateUpdateProvider<T1>(object dywhere)
+        {
+            var up = (_ormCurrent as BaseDbProvider).CreateUpdateProvider<T1>(dywhere);
             return up.AsTable(oldname => GetTableName((up as UpdateProvider<T1>)?._table.Type, oldname));
         }
-        public IUpdate<T1> Update<T1>(object dywhere) where T1 : class => Update<T1>().WhereDynamic(dywhere);
-
-        public IInsert<T1> Insert<T1>() where T1 : class
-        {
-            var ins = _ormCurrent.Insert<T1>();
-            return ins.AsTable(oldname => GetTableName((ins as InsertOrUpdateProvider<T1>)?._table.Type, oldname));
-        }
-        public IInsert<T1> Insert<T1>(T1 source) where T1 : class => Insert<T1>().AppendData(source);
-        public IInsert<T1> Insert<T1>(T1[] source) where T1 : class => Insert<T1>().AppendData(source);
-        public IInsert<T1> Insert<T1>(List<T1> source) where T1 : class => Insert<T1>().AppendData(source);
-        public IInsert<T1> Insert<T1>(IEnumerable<T1> source) where T1 : class => Insert<T1>().AppendData(source);
-
-        public IInsertOrUpdate<T1> InsertOrUpdate<T1>() where T1 : class
+        public override IInsertOrUpdate<T1> CreateInsertOrUpdateProvider<T1>()
         {
             var insup = _ormCurrent.InsertOrUpdate<T1>();
             return insup.AsTable(oldname => GetTableName((insup as InsertOrUpdateProvider<T1>)?._table.Type, oldname));
