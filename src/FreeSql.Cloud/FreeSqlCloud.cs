@@ -43,6 +43,11 @@ namespace FreeSql
             _dbkeyCurrent.Value = dbkey;
             return new FreeSqlCloundSnapshot<TDBKey>(this, dbkey);
         }
+        internal IFreeSql GetBySnapshot(TDBKey dbkey)
+        {
+            _dbkeyCurrent.Value = dbkey;
+            return this;
+        }
 
         public FreeSqlCloud<TDBKey> Register(TDBKey dbkey, Func<IFreeSql> create)
         {

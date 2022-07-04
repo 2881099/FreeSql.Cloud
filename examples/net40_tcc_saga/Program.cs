@@ -33,7 +33,11 @@ namespace net40_tcc_saga
                 //TCC
                 var tid = Guid.NewGuid().ToString();
                 fsql
-                    .StartTcc(tid, "创建订单")
+                    .StartTcc(tid, "创建订单", new TccOptions
+                    {
+                        RetryInterval = TimeSpan.FromSeconds(5),
+                        MaxRetryCount = 5,
+                    })
                     .Then<Tcc1>()
                     .Then<Tcc2>()
                     .Then<Tcc3>()
@@ -70,8 +74,8 @@ namespace net40_tcc_saga
                     .Then<Saga1>(new LocalState { Id = 1, Name = "tcc1" })
                     .Then<Saga2>()
                     .Then<Saga3>(new LocalState { Id = 3, Name = "tcc3" })
-                    .Execute()
-;
+                    .Execute();
+
                 Console.ReadKey();
             }
         }
