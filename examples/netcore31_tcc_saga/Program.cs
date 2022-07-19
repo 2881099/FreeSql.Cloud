@@ -31,12 +31,12 @@ namespace netcore31_tcc_saga
 
                 //TCC
                 var tid = Guid.NewGuid().ToString();
-                await fsql
-                    .StartTcc(tid, "创建订单")
-                    .Then<Tcc1>()
-                    .Then<Tcc2>()
-                    .Then<Tcc3>()
-                    .ExecuteAsync();
+                //await fsql
+                //    .StartTcc(tid, "创建订单")
+                //    .Then<Tcc1>()
+                //    .Then<Tcc2>()
+                //    .Then<Tcc3>()
+                //    .ExecuteAsync();
 
                 tid = Guid.NewGuid().ToString();
                 await fsql.StartTcc(tid, "支付购买",
@@ -87,21 +87,33 @@ namespace netcore31_tcc_saga
     {
         public override Task Cancel() => throw new Exception("dkdkdk");
         public override Task Confirm() => Task.CompletedTask;
-        public override Task Try() => Task.CompletedTask;
+        public override Task Try()
+        {
+            State.Name = "tcc1 modify";
+            return Task.CompletedTask;
+        }
     }
     [Description("第2步")]
     class Tcc2 : TccUnit<LocalState>
     {
         public override Task Cancel() => Task.CompletedTask;
         public override Task Confirm() => Task.CompletedTask;
-        public override Task Try() => Task.CompletedTask;
+        public override Task Try()
+        {
+            Console.WriteLine(State.Name);
+            return Task.CompletedTask;
+        }
     }
     [Description("第3步")]
     class Tcc3 : TccUnit<LocalState>
     {
         public override Task Cancel() => Task.CompletedTask;
         public override Task Confirm() => Task.CompletedTask;
-        public override Task Try() => throw new Exception("xxx");
+        public override Task Try()
+        {
+            Console.WriteLine(State.Name);
+            throw new Exception("xxx");
+        }
     }
 
     [Description("第1步")]
