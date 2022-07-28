@@ -27,7 +27,7 @@ namespace FreeSql
         internal bool _distributeTraceEnable => DistributeTrace != null;
         internal void _distributedTraceCall(string log)
         {
-            DistributeTrace?.Invoke($"{DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")} 【{DistributeKey}】{log}");
+            DistributeTrace?.Invoke($"{DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")} 【{(DistributeKey ?? "FreeSql.Cloud")}】{log}");
         }
 
         public FreeSqlCloud() : this(null)
@@ -38,6 +38,7 @@ namespace FreeSql
         public FreeSqlCloud(string distributeKey = "master")
         {
             DistributeKey = distributeKey?.Trim();
+            if (string.IsNullOrWhiteSpace(DistributeKey)) DistributeKey = null;
             _ib = new IdleBus<TDBKey, IFreeSql>();
             _ib.Notice += (_, __) => { };
         }
