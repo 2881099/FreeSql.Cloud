@@ -58,41 +58,44 @@ namespace FreeSql
         {
             if (_ib.TryRegister(dbkey, create))
             {
-                if (_ib.GetKeys().Length == 1 && !string.IsNullOrWhiteSpace(DistributeKey))
+                if (_ib.GetKeys().Length == 1)
                 {
                     _dbkeyMaster = dbkey;
-                    if (_distributeTraceEnable) _distributedTraceCall($"{dbkey} 注册成功, 并存储 TCC/SAGA 事务相关数据");
-                    _scheduler = new FreeScheduler.Scheduler(new FreeScheduler.TaskHandlers.TestHandler());
+                    if (!string.IsNullOrWhiteSpace(DistributeKey))
+                    {
+                        if (_distributeTraceEnable) _distributedTraceCall($"{dbkey} 注册成功, 并存储 TCC/SAGA 事务相关数据");
+                        _scheduler = new FreeScheduler.Scheduler(new FreeScheduler.TaskHandlers.TestHandler());
 
-                    _ormMaster.CodeFirst.ConfigEntity<TccMasterInfo>(a => a.Name($"tcc_{DistributeKey}"));
-                    _ormMaster.CodeFirst.SyncStructure<TccMasterInfo>();
-                    _ormMaster.CodeFirst.ConfigEntity<TccUnitInfo>(a => a.Name($"tcc_{DistributeKey}_unit"));
-                    _ormMaster.CodeFirst.SyncStructure<TccUnitInfo>();
+                        _ormMaster.CodeFirst.ConfigEntity<TccMasterInfo>(a => a.Name($"tcc_{DistributeKey}"));
+                        _ormMaster.CodeFirst.SyncStructure<TccMasterInfo>();
+                        _ormMaster.CodeFirst.ConfigEntity<TccUnitInfo>(a => a.Name($"tcc_{DistributeKey}_unit"));
+                        _ormMaster.CodeFirst.SyncStructure<TccUnitInfo>();
 
-                    _ormMaster.CodeFirst.ConfigEntity<SagaMasterInfo>(a => a.Name($"saga_{DistributeKey}"));
-                    _ormMaster.CodeFirst.SyncStructure<SagaMasterInfo>();
-                    _ormMaster.CodeFirst.ConfigEntity<SagaUnitInfo>(a => a.Name($"saga_{DistributeKey}_unit"));
-                    _ormMaster.CodeFirst.SyncStructure<SagaUnitInfo>();
+                        _ormMaster.CodeFirst.ConfigEntity<SagaMasterInfo>(a => a.Name($"saga_{DistributeKey}"));
+                        _ormMaster.CodeFirst.SyncStructure<SagaMasterInfo>();
+                        _ormMaster.CodeFirst.ConfigEntity<SagaUnitInfo>(a => a.Name($"saga_{DistributeKey}_unit"));
+                        _ormMaster.CodeFirst.SyncStructure<SagaUnitInfo>();
 
-                    #region 加载历史未未成 TCC 事务
-                    var tccPendings = _ormMaster.Select<TccMasterInfo>()
-                        .Where(a => a.Status == TccMasterStatus.Pending && a.RetryCount < a.MaxRetryCount)
-                        .OrderBy(a => a.CreateTime)
-                        .ToList();
-                    foreach (var pending in tccPendings)
-                        _scheduler.AddTempTask(TimeSpan.FromSeconds(pending.RetryInterval), TccMaster<TDBKey>.GetTempTask(this, pending.Tid, pending.Title, pending.RetryInterval));
-                    if (_distributeTraceEnable) _distributedTraceCall($"成功加载历史未完成 TCC 事务 {tccPendings.Count} 个");
-                    #endregion
+                        #region 加载历史未未成 TCC 事务
+                        var tccPendings = _ormMaster.Select<TccMasterInfo>()
+                            .Where(a => a.Status == TccMasterStatus.Pending && a.RetryCount < a.MaxRetryCount)
+                            .OrderBy(a => a.CreateTime)
+                            .ToList();
+                        foreach (var pending in tccPendings)
+                            _scheduler.AddTempTask(TimeSpan.FromSeconds(pending.RetryInterval), TccMaster<TDBKey>.GetTempTask(this, pending.Tid, pending.Title, pending.RetryInterval));
+                        if (_distributeTraceEnable) _distributedTraceCall($"成功加载历史未完成 TCC 事务 {tccPendings.Count} 个");
+                        #endregion
 
-                    #region 加载历史未未成 SAGA 事务
-                    var sagaPendings = _ormMaster.Select<SagaMasterInfo>()
-                        .Where(a => a.Status == SagaMasterStatus.Pending && a.RetryCount < a.MaxRetryCount)
-                        .OrderBy(a => a.CreateTime)
-                        .ToList();
-                    foreach (var pending in sagaPendings)
-                        _scheduler.AddTempTask(TimeSpan.FromSeconds(pending.RetryInterval), SagaMaster<TDBKey>.GetTempTask(this, pending.Tid, pending.Title, pending.RetryInterval));
-                    if (_distributeTraceEnable) _distributedTraceCall($"成功加载历史未完成 SAGA 事务 {sagaPendings.Count} 个");
-                    #endregion
+                        #region 加载历史未未成 SAGA 事务
+                        var sagaPendings = _ormMaster.Select<SagaMasterInfo>()
+                            .Where(a => a.Status == SagaMasterStatus.Pending && a.RetryCount < a.MaxRetryCount)
+                            .OrderBy(a => a.CreateTime)
+                            .ToList();
+                        foreach (var pending in sagaPendings)
+                            _scheduler.AddTempTask(TimeSpan.FromSeconds(pending.RetryInterval), SagaMaster<TDBKey>.GetTempTask(this, pending.Tid, pending.Title, pending.RetryInterval));
+                        if (_distributeTraceEnable) _distributedTraceCall($"成功加载历史未完成 SAGA 事务 {sagaPendings.Count} 个");
+                        #endregion
+                    }
                 }
             }
             return this;
