@@ -23,16 +23,21 @@ namespace FreeSql
         internal IFreeSql _ormMaster => _ib.Get(_dbkeyMaster);
         internal IFreeSql _ormCurrent => _ib.Get(object.Equals(_dbkeyCurrent.Value, default(TDBKey)) ? _dbkeyMaster : _dbkeyCurrent.Value);
         internal IdleBus<TDBKey, IFreeSql> _ib;
-        internal IdleScheduler.Scheduler _scheduler;
+        internal FreeScheduler.Scheduler _scheduler;
         internal bool _distributeTraceEnable => DistributeTrace != null;
         internal void _distributedTraceCall(string log)
         {
             DistributeTrace?.Invoke($"{DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")} 【{DistributeKey}】{log}");
         }
 
+        public FreeSqlCloud() : this(null)
+        {
+
+        }
+
         public FreeSqlCloud(string distributeKey = "master")
         {
-            DistributeKey = distributeKey;
+            DistributeKey = distributeKey?.Trim();
             _ib = new IdleBus<TDBKey, IFreeSql>();
             _ib.Notice += (_, __) => { };
         }
@@ -53,11 +58,11 @@ namespace FreeSql
         {
             if (_ib.TryRegister(dbkey, create))
             {
-                if (_ib.GetKeys().Length == 1)
+                if (_ib.GetKeys().Length == 1 && !string.IsNullOrWhiteSpace(DistributeKey))
                 {
                     _dbkeyMaster = dbkey;
                     if (_distributeTraceEnable) _distributedTraceCall($"{dbkey} 注册成功, 并存储 TCC/SAGA 事务相关数据");
-                    _scheduler = new IdleScheduler.Scheduler(new IdleScheduler.TaskHandlers.TestHandler());
+                    _scheduler = new FreeScheduler.Scheduler(new FreeScheduler.TaskHandlers.TestHandler());
 
                     _ormMaster.CodeFirst.ConfigEntity<TccMasterInfo>(a => a.Name($"tcc_{DistributeKey}"));
                     _ormMaster.CodeFirst.SyncStructure<TccMasterInfo>();
@@ -94,6 +99,7 @@ namespace FreeSql
         }
         public TccMaster<TDBKey> StartTcc(string tid, string title, TccOptions options = null)
         {
+            if (string.IsNullOrWhiteSpace(DistributeKey)) throw new Exception("未开启 TCC 事务，请检查 ctor 构造方法");
             if (_scheduler.QuantityTempTask > 10_0000)
             {
                 if (_distributeTraceEnable) _distributedTraceCall($"TCC({tid}, {title}) 系统繁忙创建失败, 当前未完成事务 {_scheduler.QuantityTempTask} 个");
@@ -103,6 +109,7 @@ namespace FreeSql
         }
         public SagaMaster<TDBKey> StartSaga(string tid, string title, SagaOptions options = null)
         {
+            if (string.IsNullOrWhiteSpace(DistributeKey)) throw new Exception("未开启 TCC 事务，请检查 ctor 构造方法");
             if (_scheduler.QuantityTempTask > 10_0000)
             {
                 if (_distributeTraceEnable) _distributedTraceCall($"SAGA({tid}, {title}) 系统繁忙创建失败, 当前未完成事务 {_scheduler.QuantityTempTask} 个");

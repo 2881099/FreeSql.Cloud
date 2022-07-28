@@ -31,6 +31,10 @@ fsql.Register(DbEnum.db3, () => new FreeSqlBuilder()
 
 > FreeSqlCloud 必须定义成单例模式
 
+> new FreeSqlCloud\<DbEnum\>() 多连接管理
+
+> new FreeSqlCloud\<DbEnum\>("myapp") 开启 TCC/SAGA 事务生效
+
 ## 如何使用？
 
 FreeSqlCloud 的访问方式和 IFreeSql 一样：
