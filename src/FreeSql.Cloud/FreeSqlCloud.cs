@@ -14,10 +14,37 @@ namespace FreeSql
     {
         public string DistributeKey { get; }
         public Action<string> DistributeTrace;
+
+        #region EntitySteering
         /// <summary>
-        /// 实体类型转向配置，比如 User -> db2 不需要使用 fsql.Change("db2")
+        /// 实体类型转向配置，如 User -> db2，之后直接使用 fsqlc.Select&lt;User&gt;()，而不需要 fsqlc.Change("db2").Select&lt;User&gt;()
         /// </summary>
-        public ConcurrentDictionary<Type, TDBKey> EntitySteering { get; } = new ConcurrentDictionary<Type, TDBKey>();
+        public Action<object, EntitySteeringEventArgs> EntitySteering;
+        public class EntitySteeringEventArgs
+        {
+            public string MethodName { get; internal set; }
+            public Type EntityType { get; internal set; }
+            /// <summary>
+            /// 可用的目标DBKey
+            /// </summary>
+            public TDBKey[] AvailableDBKeys { get; internal set; }
+
+            internal bool _dbkeyChanged;
+            internal TDBKey _dbkey;
+            /// <summary>
+            /// 转向的目标DBKey，重写该值可转向到其他目标DBKey
+            /// </summary>
+            public TDBKey DBKey
+            {
+                get => _dbkey;
+                set
+                {
+                    _dbkeyChanged = true;
+                    _dbkey = value;
+                }
+            }
+        }
+        #endregion
 
         internal TDBKey _dbkeyMaster;
 #if net40
@@ -25,8 +52,9 @@ namespace FreeSql
 #else
         internal AsyncLocal<TDBKey> _dbkeyCurrent = new AsyncLocal<TDBKey>();
 #endif
+        internal TDBKey _dbkey => object.Equals(_dbkeyCurrent.Value, default(TDBKey)) ? _dbkeyMaster : _dbkeyCurrent.Value;
         internal IFreeSql _ormMaster => _ib.Get(_dbkeyMaster);
-        internal IFreeSql _ormCurrent => _ib.Get(object.Equals(_dbkeyCurrent.Value, default(TDBKey)) ? _dbkeyMaster : _dbkeyCurrent.Value);
+        internal IFreeSql _ormCurrent => _ib.Get(_dbkey);
         internal IdleBus<TDBKey, IFreeSql> _ib;
         internal FreeScheduler.Scheduler _scheduler;
         internal bool _distributeTraceEnable => DistributeTrace != null;
@@ -37,7 +65,6 @@ namespace FreeSql
 
         public FreeSqlCloud() : this(null)
         {
-            EntitySteering.TryAdd(typeof(IFreeSql), default);
         }
 
         public FreeSqlCloud(string distributeKey = "master")
@@ -143,35 +170,44 @@ namespace FreeSql
         public void Transaction(Action handler) => _ormCurrent.Transaction(handler);
         public void Transaction(IsolationLevel isolationLevel, Action handler) => _ormCurrent.Transaction(isolationLevel, handler);
 
+        IFreeSql GetCrudOrm(string methodName, Type entityType)
+        {
+            if (EntitySteering != null)
+            {
+                var args = new EntitySteeringEventArgs
+                {
+                    MethodName = methodName,
+                    EntityType = entityType,
+                    AvailableDBKeys = _ib.GetKeys(a => a.Ado.MasterPool.IsAvailable),
+                    _dbkey = _dbkey
+                };
+                EntitySteering(this, args);
+                if (args._dbkeyChanged) return _ib.Get(args.DBKey);
+            }
+            return _ormCurrent;
+        }
+
         public ISelect<T1> Select<T1>() where T1 : class
         {
-            if (EntitySteering.TryGetValue(typeof(T1), out var trydbkey))
-                return _ib.Get(trydbkey).Select<T1>();
-            return _ormCurrent.Select<T1>();
+            return GetCrudOrm(nameof(Select), typeof(T1)).Select<T1>();
         }
         public ISelect<T1> Select<T1>(object dywhere) where T1 : class => Select<T1>().WhereDynamic(dywhere);
 
         public IDelete<T1> Delete<T1>() where T1 : class
         {
-            if (EntitySteering.TryGetValue(typeof(T1), out var trydbkey))
-                return _ib.Get(trydbkey).Delete<T1>();
-            return _ormCurrent.Delete<T1>();
+            return GetCrudOrm(nameof(Delete), typeof(T1)).Delete<T1>();
         }
         public IDelete<T1> Delete<T1>(object dywhere) where T1 : class => Delete<T1>().WhereDynamic(dywhere);
 
         public IUpdate<T1> Update<T1>() where T1 : class
         {
-            if (EntitySteering.TryGetValue(typeof(T1), out var trydbkey))
-                return _ib.Get(trydbkey).Update<T1>();
-            return _ormCurrent.Update<T1>();
+            return GetCrudOrm(nameof(Update), typeof(T1)).Update<T1>();
         }
         public IUpdate<T1> Update<T1>(object dywhere) where T1 : class => Update<T1>().WhereDynamic(dywhere);
 
         public IInsert<T1> Insert<T1>() where T1 : class
         {
-            if (EntitySteering.TryGetValue(typeof(T1), out var trydbkey))
-                return _ib.Get(trydbkey).Insert<T1>();
-            return _ormCurrent.Insert<T1>();
+            return GetCrudOrm(nameof(Insert), typeof(T1)).Insert<T1>();
         }
         public IInsert<T1> Insert<T1>(T1 source) where T1 : class => Insert<T1>().AppendData(source);
         public IInsert<T1> Insert<T1>(T1[] source) where T1 : class => Insert<T1>().AppendData(source);
@@ -180,9 +216,7 @@ namespace FreeSql
 
         public IInsertOrUpdate<T1> InsertOrUpdate<T1>() where T1 : class
         {
-            if (EntitySteering.TryGetValue(typeof(T1), out var trydbkey))
-                return _ib.Get(trydbkey).InsertOrUpdate<T1>();
-            return _ormCurrent.InsertOrUpdate<T1>();
+            return GetCrudOrm(nameof(InsertOrUpdate), typeof(T1)).InsertOrUpdate<T1>();
         }
     }
 }

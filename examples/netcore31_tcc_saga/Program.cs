@@ -26,6 +26,26 @@ namespace netcore31_tcc_saga
                     .UseConnectionString(DataType.Sqlite, @"Data Source=db3.db")
                     .Build());
 
+                fsql.EntitySteering = (_, e) =>
+                {
+                    switch (e.MethodName)
+                    {
+                        case "Select":
+                            if (e.EntityType == typeof(Program)) ; //判断某一个实体类型
+                            if (e.DBKey == DbEnum.db1) //判断主库时
+                            {
+                                var dbkeyIndex = new Random().Next(0, e.AvailableDBKeys.Length);
+                                e.DBKey = e.AvailableDBKeys[dbkeyIndex]; //重新定向到其他 db
+                            }
+                            break;
+                        case "Insert":
+                        case "Update":
+                        case "Delete":
+                        case "InsertOrUpdate":
+                            break;
+                    }
+                };
+
                 //for (var a = 0; a < 1000; a++)
                 //{
 

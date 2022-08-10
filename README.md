@@ -53,10 +53,36 @@ fsql.Delete<T>();
 ```c#
 fsql.Change(DbEnum.db3).Select<T>();
 //以后所有 fsql.Select/Insert/Update/Delete 操作是 db3
+```
 
-//也可以永久指定实体类型转向，避免每次 Change
-fsql.EntitySteering.TryAdd(typeof(T), DbEnum.db3)
-fsql.Select<T>();
+自动定向数据库配置：
+
+```c#
+//对 fsql.CRUD 方法名 + 实体类型 进行拦截，自动定向到对应的数据库，达到自动 Change 切换数据库目的
+fsql.EntitySteering = (_, e) =>
+{
+    switch (e.MethodName)
+    {
+        case "Select":
+            if (e.EntityType == typeof(T))
+            {
+                //查询 T 自动定向 db3
+                e.DBKey = DbEnum.db3;
+            }
+            else if (e.DBKey == DbEnum.db1)
+            {
+                //此处像不像读写分离？
+                var dbkeyIndex = new Random().Next(0, e.AvailableDBKeys.Length);
+                e.DBKey = e.AvailableDBKeys[dbkeyIndex]; //重新定向到其他 db
+            }
+            break;
+        case "Insert":
+        case "Update":
+        case "Delete":
+        case "InsertOrUpdate":
+            break;
+    }
+};
 ```
 
 ## 关于分布式事务
