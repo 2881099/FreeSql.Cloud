@@ -3,6 +3,7 @@ using FreeSql.Cloud.Tcc;
 using FreeSql.Internal;
 using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Data;
 using System.Threading;
 
@@ -13,6 +14,10 @@ namespace FreeSql
     {
         public string DistributeKey { get; }
         public Action<string> DistributeTrace;
+        /// <summary>
+        /// 实体类型转向配置，比如 User -> db2 不需要使用 fsql.Change("db2")
+        /// </summary>
+        public ConcurrentDictionary<Type, TDBKey> EntitySteering { get; } = new ConcurrentDictionary<Type, TDBKey>();
 
         internal TDBKey _dbkeyMaster;
 #if net40
@@ -32,7 +37,7 @@ namespace FreeSql
 
         public FreeSqlCloud() : this(null)
         {
-
+            EntitySteering.TryAdd(typeof(IFreeSql), default);
         }
 
         public FreeSqlCloud(string distributeKey = "master")
@@ -140,24 +145,32 @@ namespace FreeSql
 
         public ISelect<T1> Select<T1>() where T1 : class
         {
+            if (EntitySteering.TryGetValue(typeof(T1), out var trydbkey))
+                return _ib.Get(trydbkey).Select<T1>();
             return _ormCurrent.Select<T1>();
         }
         public ISelect<T1> Select<T1>(object dywhere) where T1 : class => Select<T1>().WhereDynamic(dywhere);
 
         public IDelete<T1> Delete<T1>() where T1 : class
         {
+            if (EntitySteering.TryGetValue(typeof(T1), out var trydbkey))
+                return _ib.Get(trydbkey).Delete<T1>();
             return _ormCurrent.Delete<T1>();
         }
         public IDelete<T1> Delete<T1>(object dywhere) where T1 : class => Delete<T1>().WhereDynamic(dywhere);
 
         public IUpdate<T1> Update<T1>() where T1 : class
         {
+            if (EntitySteering.TryGetValue(typeof(T1), out var trydbkey))
+                return _ib.Get(trydbkey).Update<T1>();
             return _ormCurrent.Update<T1>();
         }
         public IUpdate<T1> Update<T1>(object dywhere) where T1 : class => Update<T1>().WhereDynamic(dywhere);
 
         public IInsert<T1> Insert<T1>() where T1 : class
         {
+            if (EntitySteering.TryGetValue(typeof(T1), out var trydbkey))
+                return _ib.Get(trydbkey).Insert<T1>();
             return _ormCurrent.Insert<T1>();
         }
         public IInsert<T1> Insert<T1>(T1 source) where T1 : class => Insert<T1>().AppendData(source);
@@ -167,6 +180,8 @@ namespace FreeSql
 
         public IInsertOrUpdate<T1> InsertOrUpdate<T1>() where T1 : class
         {
+            if (EntitySteering.TryGetValue(typeof(T1), out var trydbkey))
+                return _ib.Get(trydbkey).InsertOrUpdate<T1>();
             return _ormCurrent.InsertOrUpdate<T1>();
         }
     }

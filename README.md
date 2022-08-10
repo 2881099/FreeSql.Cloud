@@ -53,6 +53,10 @@ fsql.Delete<T>();
 ```c#
 fsql.Change(DbEnum.db3).Select<T>();
 //以后所有 fsql.Select/Insert/Update/Delete 操作是 db3
+
+//也可以永久指定实体类型转向，避免每次 Change
+fsql.EntitySteering.TryAdd(typeof(T), DbEnum.db3)
+fsql.Select<T>();
 ```
 
 ## 关于分布式事务
