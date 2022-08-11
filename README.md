@@ -27,6 +27,10 @@ fsql.Register(DbEnum.db2, () => new FreeSqlBuilder()
 fsql.Register(DbEnum.db3, () => new FreeSqlBuilder()
     .UseConnectionString(DataType.Sqlite, @"Data Source=db3.db")
     .Build());
+
+services.AddSingleton<IFreeSql>(fsql);
+services.AddSingleton(fsql);
+//注入两个类型，稳
 ```
 
 > FreeSqlCloud 必须定义成单例模式
@@ -34,6 +38,20 @@ fsql.Register(DbEnum.db3, () => new FreeSqlBuilder()
 > new FreeSqlCloud\<DbEnum\>() 多连接管理
 
 > new FreeSqlCloud\<DbEnum\>("myapp") 开启 TCC/SAGA 事务生效
+
+## 关于并发
+
+FreeSqlCloud 内部使用 IdleBus + AsyncLocal\<string\> 方式实现。
+
+AsyncLocal 存储执行上下文 DBKey 值，它在异步或同步并发场景是安全的，请百度了解。
+
+> 注意：async 方法不使用 await 就会脱离执行上下文
+
+fsql.Change(DbEnum.db3) 会改变 AsyncLocal 执行上下文 DBKey 值。
+
+fsql.Select\<T\>() 会调用 IdleBus.Get(AsyncLocal).Select\<T\>()。
+
+> 你还会顾及并发问题吗？
 
 ## 如何使用？
 
