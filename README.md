@@ -45,11 +45,11 @@ FreeSqlCloud 内部使用 IdleBus + AsyncLocal\<string\> 方式实现。
 
 1、AsyncLocal 存储执行上下文 DBKey 值，它在异步或同步并发场景是安全的，请百度了解。
 
-> 注意：async 方法不使用 await 就会脱离执行上下文
+> 注意：异步不使用 await 会脱离执行上下文
 
-2、fsql.Change(DbEnum.db3) 会改变 AsyncLocal 执行上下文 DBKey 值。
+2、fsql.Change(DbEnum.db3) 会改变 AsyncLocal 值。
 
-> fsql.Change 比 IdleBus.Get 更聪明的返回 IFreeSql 特殊实现，不会出现 IdleBus 被释放后的问题。
+> fsql.Change 比 IdleBus.Get 更聪明的返回 IFreeSql 特殊实现，不会出现 IdleBus 被释放的错误，IdleBus.Get 不允许被外部变量长期引用。
 
 3、fsql.Select\<T\>() 会调用 IdleBus.Get(AsyncLocal).Select\<T\>()。
 
