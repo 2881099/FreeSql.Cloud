@@ -43,15 +43,36 @@ services.AddSingleton(fsql);
 
 FreeSqlCloud 内部使用 IdleBus + AsyncLocal\<string\> 方式实现。
 
-1、AsyncLocal 存储执行上下文 DBKey 值，它在异步或同步并发场景是安全的，请百度了解。
+1、FreeSqlCloud 虽然是 IFreeSql 接口实现，但它不负责直接访问数据库，而只是个代理层。
+
+```c#
+public class FreeSqlCloud<TDBKey> : IFreeSql
+{
+    AsyncLocal<TDBKey> _dbkeyCurrent = new AsyncLocal<TDBKey>();
+    IFreeSql _ormCurrent => _idlebus.Get(_dbkeyCurrent.Value);
+    IdleBus<TDBKey, IFreeSql> _idlebus;
+    ...
+    public IAdo Ado => _ormCurrent.Ado;
+    public IAop Aop => _ormCurrent.Aop;
+    public ICodeFirst CodeFirst => _ormCurrent.CodeFirst;
+    public IDbFirst DbFirst => _ormCurrent.DbFirst;
+    public GlobalFilter GlobalFilter => _ormCurrent.GlobalFilter;
+
+    public void Transaction(Action handler) => _ormCurrent.Transaction(handler);
+    public void Transaction(IsolationLevel isolationLevel, Action handler) => _ormCurrent.Transaction(isolationLevel, handler);
+    ...
+}
+```
+
+2、AsyncLocal 存储执行上下文 DBKey 值，它在异步或同步并发场景是安全的，请百度了解。
 
 > 注意：异步不使用 await 会脱离执行上下文
 
-2、fsql.Change(DbEnum.db3) 会改变 AsyncLocal 值。
+3、fsql.Change(DbEnum.db3) 会改变 AsyncLocal 值。
 
 > 说明：fsql.Change 比 IdleBus.Get 更聪明的返回 IFreeSql 特殊实现，不会出现 IdleBus 被释放的错误（原因：IdleBus.Get 返回值不允许被外部变量长期引用，应该每次 Get 获取对象）
 
-3、fsql.Select\<T\>() 会调用 IdleBus.Get(AsyncLocal).Select\<T\>()。
+4、fsql.Select\<T\>() 会调用 IdleBus.Get(AsyncLocal).Select\<T\>()。
 
 > 你还会顾及并发问题吗？
 
