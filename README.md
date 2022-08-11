@@ -93,7 +93,7 @@ fsql.EntitySteering = (_, e) =>
 
 FreeSqlCloud 内部使用 IdleBus + AsyncLocal\<string\> 方式实现。
 
-1、FreeSqlCloud 虽然是 IFreeSql 接口实现，但它不负责直接访问数据库，而只是个代理层。
+1、FreeSqlCloud 实现了接口 IFreeSql，但它不负责直接交互数据库，只是个代理层。
 
 ```c#
 public class FreeSqlCloud<TDBKey> : IFreeSql
@@ -114,13 +114,13 @@ public class FreeSqlCloud<TDBKey> : IFreeSql
 }
 ```
 
-2、AsyncLocal 存储执行上下文 DBKey 值，它在异步或同步并发场景是安全的，请百度了解。
+2、AsyncLocal 存储执行上下文 DBKey 值，在异步或同步并发场景是安全的，请百度了解。
 
 > 注意：异步不使用 await 会脱离执行上下文
 
-3、fsql.Change(DbEnum.db3) 会改变 AsyncLocal 值。
+3、fsql.Change(DbEnum.db3) 会改变 AsyncLocal DBKey 值。
 
-> 说明：fsql.Change 比 IdleBus.Get 更聪明的返回 IFreeSql 特殊实现，不会出现 IdleBus 被释放的错误（原因：IdleBus.Get 返回值不允许被外部变量长期引用，应该每次 Get 获取对象）
+> 比 IdleBus.Get 更聪明的返回 IFreeSql 特殊实现，大大降低 IdleBus 误用被释放的异常（原因：IdleBus.Get 返回值不允许被外部变量长期引用，应每次 Get 获取对象）
 
 4、fsql.Select\<T\>() 会调用 IdleBus.Get(AsyncLocal).Select\<T\>()。
 

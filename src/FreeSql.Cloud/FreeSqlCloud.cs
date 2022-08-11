@@ -71,20 +71,35 @@ namespace FreeSql
         {
             DistributeKey = distributeKey?.Trim();
             if (string.IsNullOrWhiteSpace(DistributeKey)) DistributeKey = null;
-            _ib = new IdleBus<TDBKey, IFreeSql>();
+            _ib = new IdleBus<TDBKey, IFreeSql>(TimeSpan.FromMinutes(3));
             _ib.Notice += (_, __) => { };
         }
 
+        /// <summary>
+        /// 切换数据库（同一线程，或异步await 后续操作有效）<para></para>
+        /// 注意：单次有效请使用 Use(dbkey)
+        /// </summary>
+        /// <param name="dbkey"></param>
+        /// <returns></returns>
         public IFreeSql Change(TDBKey dbkey)
         {
-            if (_distributeTraceEnable) _distributedTraceCall($"数据库切换 {dbkey}");
+            if (_distributeTraceEnable) _distributedTraceCall($"数据库切换[Change] {dbkey}");
             _dbkeyCurrent.Value = dbkey;
+            return new FreeSqlCloundSnapshot<TDBKey>(this, dbkey);
+        }
+        /// <summary>
+        /// 临时使用数据库（单次有效）
+        /// </summary>
+        /// <param name="dbkey"></param>
+        /// <returns></returns>
+        public IFreeSql Use(TDBKey dbkey)
+        {
+            if (_distributeTraceEnable) _distributedTraceCall($"数据库使用[Use] {dbkey}");
             return new FreeSqlCloundSnapshot<TDBKey>(this, dbkey);
         }
         internal IFreeSql GetBySnapshot(TDBKey dbkey)
         {
-            _dbkeyCurrent.Value = dbkey;
-            return this;
+            return _ib.Get(dbkey);
         }
 
         public FreeSqlCloud<TDBKey> Register(TDBKey dbkey, Func<IFreeSql> create)
