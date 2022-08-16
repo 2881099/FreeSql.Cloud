@@ -65,6 +65,9 @@ namespace FreeSql.Cloud.Saga
 
         [Column(Name = "create_time", ServerTime = DateTimeKind.Utc, CanUpdate = false)]
         public DateTime CreateTime { get; set; } = DateTime.UtcNow;
+
+        [Column(Name = "db_key", StringLength = 128)]
+        public string DbKey { get; set; }
     }
     public enum SagaUnitStage { Commit, Cancel }
 }

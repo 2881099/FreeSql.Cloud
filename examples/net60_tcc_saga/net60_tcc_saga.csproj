@@ -2,15 +2,15 @@
 
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
-		<TargetFramework>net5.0</TargetFramework>
+		<TargetFramework>net6.0</TargetFramework>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="FreeSql" Version="3.2.665" />
 		<PackageReference Include="FreeSql.Provider.Sqlite" Version="3.2.665" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\src\FreeSql.Cloud\FreeSql.Cloud.csproj" />
 	</ItemGroup>
+
 </Project>

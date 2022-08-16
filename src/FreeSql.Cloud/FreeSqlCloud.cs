@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Data;
 using System.Threading;
+using FreeSql.Cloud.Model;
 
 namespace FreeSql
 {
@@ -106,6 +107,15 @@ namespace FreeSql
         {
             if (_ib.TryRegister(dbkey, create))
             {
+                if (!string.IsNullOrWhiteSpace(DistributeKey))
+                {
+                    var orm = _ib.Get(dbkey);
+                    orm.CodeFirst.ConfigEntity<UnitInvokedInfo>(a => a.Name($"unit_invoked_{DistributeKey}"));
+                    orm.CodeFirst.SyncStructure<UnitInvokedInfo>(); //StartTcc(tid).Then<TccUnit1>(DbEnum.db2, null) 幂等判断表
+
+                    //orm.CodeFirst.ConfigEntity<SagaUnitInvokeInfo>(a => a.Name($"saga_{DistributeKey}_unit_invoke"));
+                    //orm.CodeFirst.SyncStructure<SagaUnitInvokeInfo>();
+                }
                 if (_ib.GetKeys().Length == 1)
                 {
                     _dbkeyMaster = dbkey;

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace FreeSql.Cloud.Tcc
 {
-    public class TccMaster<TDBKey>
+    public partial class TccMaster<TDBKey>
     {
         FreeSqlCloud<TDBKey> _cloud;
         string _tid;
@@ -31,10 +31,18 @@ namespace FreeSql.Cloud.Tcc
             };
         }
 
-        public TccMaster<TDBKey> Then<TUnit>() where TUnit : ITccUnit => Then(typeof(TUnit), null);
-        public TccMaster<TDBKey> Then<TUnit>(object state) where TUnit : ITccUnit => Then(typeof(TUnit), state);
+        /// <summary>
+        /// 编排分布式事务单元<para></para>
+        /// * Try/Confirm/Cancel 使用 Orm 属性统一了事务；<para></para>
+        /// * Confirm/Cancel 内部已经过滤了重复执行；
+        /// </summary>
+        /// <typeparam name="TUnit"></typeparam>
+        /// <param name="dbkey">选择数据库，Try/Confirm/Cancel 使用 Orm 属性统一了事务，并且内部处理了幂等操作</param>
+        /// <param name="state">无状态数据</param>
+        /// <returns></returns>
+        public TccMaster<TDBKey> Then<TUnit>(TDBKey dbkey, object state = null) where TUnit : ITccUnit => Then(typeof(TUnit), dbkey, true, state);
 
-        TccMaster<TDBKey> Then(Type tccUnitType, object state)
+        TccMaster<TDBKey> Then(Type tccUnitType, TDBKey dbkey, bool isdbkey, object state)
         {
             if (tccUnitType == null) throw new ArgumentNullException(nameof(tccUnitType));
             var unitTypeBase = typeof(TccUnit<>);
@@ -59,6 +67,7 @@ namespace FreeSql.Cloud.Tcc
                 Tid = _tid,
                 TypeName = tccUnitType.AssemblyQualifiedName,
             });
+            if (isdbkey) _thenUnitInfos.Last().DbKey = dbkey.ToString();
             return this;
         }
 
@@ -113,13 +122,13 @@ namespace FreeSql.Cloud.Tcc
                         try
                         {
                             (units[idx] as ITccUnitSetter)?.SetUnit(_thenUnitInfos[idx]);
-                            var fsql = FreeSqlTransaction.Create(ormMaster, () => tran);
+                            var tranOrm = FreeSqlTransaction.Create(ormMaster, () => tran);
 #if net40
-                            fsql.Insert(_thenUnitInfos[idx]).ExecuteAffrows();
-                            units[idx].Try();
+                            tranOrm.Insert(_thenUnitInfos[idx]).ExecuteAffrows();
+                            InvokeUnit(_cloud, _thenUnitInfos[idx], units[idx], InvokeUnitMethod.Try, tranOrm);
 #else
-                            await fsql.Insert(_thenUnitInfos[idx]).ExecuteAffrowsAsync();
-                            await units[idx].Try();
+                            await tranOrm.Insert(_thenUnitInfos[idx]).ExecuteAffrowsAsync();
+                            await InvokeUnitAsync(_cloud, _thenUnitInfos[idx], units[idx], InvokeUnitMethod.Try, tranOrm);
 #endif
                             tran.Commit();
                             tranIsCommited = true;
@@ -156,20 +165,26 @@ namespace FreeSql.Cloud.Tcc
             if (stateType == null) return;
             (unit as ITccUnitSetter)?.SetState(Newtonsoft.Json.JsonConvert.DeserializeObject(unitInfo.State, stateType));
         }
+
+
 #if net40
         static void ConfimCancel(FreeSqlCloud<TDBKey> cloud, string tid, bool retry)
         {
             var masterInfo = cloud._ormMaster.Select<TccMasterInfo>().Where(a => a.Tid == tid && a.Status == TccMasterStatus.Pending && a.RetryCount <= a.MaxRetryCount).First();
             if (masterInfo == null) return;
             var unitInfos = cloud._ormMaster.Select<TccUnitInfo>().Where(a => a.Tid == tid).OrderBy(a => a.Index).ToList();
+            var units = LocalGetUnits();
+            ConfimCancel(cloud, masterInfo, unitInfos, units, retry);
 #else
         async static Task ConfimCancelAsync(FreeSqlCloud<TDBKey> cloud, string tid, bool retry)
         {
             var masterInfo = await cloud._ormMaster.Select<TccMasterInfo>().Where(a => a.Tid == tid && a.Status == TccMasterStatus.Pending && a.RetryCount <= a.MaxRetryCount).FirstAsync();
             if (masterInfo == null) return;
             var unitInfos = await cloud._ormMaster.Select<TccUnitInfo>().Where(a => a.Tid == tid).OrderBy(a => a.Index).ToListAsync();
+            var units = LocalGetUnits();
+            await ConfimCancelAsync(cloud, masterInfo, unitInfos, units, retry);
 #endif
-            var units = unitInfos.Select(unitInfo =>
+            ITccUnit[] LocalGetUnits() => unitInfos.Select(unitInfo =>
             {
                 try
                 {
@@ -188,12 +203,6 @@ namespace FreeSql.Cloud.Tcc
                 }
             })
             .ToArray();
-
-#if net40
-            ConfimCancel(cloud, masterInfo, unitInfos, units, retry);
-#else
-            await ConfimCancelAsync(cloud, masterInfo, unitInfos, units, retry);
-#endif
         }
 
 #if net40
@@ -224,22 +233,22 @@ namespace FreeSql.Cloud.Tcc
                             var tranIsCommited = false;
                             try
                             {
-                                var fsql = FreeSqlTransaction.Create(ormMaster, () => tran);
+                                var tranOrm = FreeSqlTransaction.Create(ormMaster, () => tran);
                                 (units[idx] as ITccUnitSetter)?.SetUnit(unitInfo);
-                                var update = fsql.Update<TccUnitInfo>()
+                                var update = tranOrm.Update<TccUnitInfo>()
                                     .Where(a => a.Tid == masterInfo.Tid && a.Index == idx + 1 && a.Stage == TccUnitStage.Try)
                                     .Set(a => a.Stage, isConfirm ? TccUnitStage.Confirm : TccUnitStage.Cancel);
 #if net40
                                 if (update.ExecuteAffrows() == 1)
                                 {
-                                    if (isConfirm) units[idx].Confirm();
-                                    else units[idx].Cancel();
+                                    if (isConfirm) InvokeUnit(cloud, unitInfo, units[idx], InvokeUnitMethod.Confirm, tranOrm);
+                                    else InvokeUnit(cloud, unitInfo, units[idx], InvokeUnitMethod.Cancel, tranOrm);
                                 }
 #else
                                 if (await update.ExecuteAffrowsAsync() == 1)
                                 {
-                                    if (isConfirm) await units[idx].Confirm();
-                                    else await units[idx].Cancel();
+                                    if (isConfirm) await InvokeUnitAsync(cloud, unitInfo, units[idx], InvokeUnitMethod.Confirm, tranOrm);
+                                    else await InvokeUnitAsync(cloud, unitInfo, units[idx], InvokeUnitMethod.Cancel, tranOrm);
                                 }
 #endif
                                 tran.Commit();

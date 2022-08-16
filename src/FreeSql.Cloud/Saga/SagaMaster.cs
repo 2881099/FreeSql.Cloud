@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace FreeSql.Cloud.Saga
 {
-    public class SagaMaster<TDBKey>
+    public partial class SagaMaster<TDBKey>
     {
         FreeSqlCloud<TDBKey> _cloud;
         string _tid;
@@ -31,10 +31,18 @@ namespace FreeSql.Cloud.Saga
             };
         }
 
-        public SagaMaster<TDBKey> Then<TUnit>() where TUnit : ISagaUnit => Then(typeof(TUnit), null);
-        public SagaMaster<TDBKey> Then<TUnit>(object state) where TUnit : ISagaUnit => Then(typeof(TUnit), state);
+        /// <summary>
+        /// 编排分布式事务单元<para></para>
+        /// * Commit/Cancel 使用 Orm 属性统一了事务；<para></para>
+        /// * Cancel 内部已经过滤了重复执行；
+        /// </summary>
+        /// <typeparam name="TUnit"></typeparam>
+        /// <param name="dbkey">选择数据库，Commit/Cancel 使用 Orm 属性统一了事务，并且内部处理了幂等操作</param>
+        /// <param name="state">无状态数据</param>
+        /// <returns></returns>
+        public SagaMaster<TDBKey> Then<TUnit>(TDBKey dbkey, object state = null) where TUnit : ISagaUnit => Then(typeof(TUnit), dbkey, true, state);
 
-        SagaMaster<TDBKey> Then(Type sagaUnitType, object state)
+        SagaMaster<TDBKey> Then(Type sagaUnitType, TDBKey dbkey, bool isdbkey, object state)
         {
             if (sagaUnitType == null) throw new ArgumentNullException(nameof(sagaUnitType));
             var unitTypeBase = typeof(SagaUnit<>);
@@ -59,6 +67,7 @@ namespace FreeSql.Cloud.Saga
                 Tid = _tid,
                 TypeName = sagaUnitType.AssemblyQualifiedName,
             });
+            if (isdbkey) _thenUnitInfos.Last().DbKey = dbkey.ToString();
             return this;
         }
 
@@ -114,13 +123,13 @@ namespace FreeSql.Cloud.Saga
                         try
                         {
                             (units[idx] as ISagaUnitSetter)?.SetUnit(_thenUnitInfos[idx]);
-                            var fsql = FreeSqlTransaction.Create(ormMaster, () => tran);
+                            var tranOrm = FreeSqlTransaction.Create(ormMaster, () => tran);
 #if net40
-                            fsql.Insert(_thenUnitInfos[idx]).ExecuteAffrows();
-                            units[idx].Commit();
+                            tranOrm.Insert(_thenUnitInfos[idx]).ExecuteAffrows();
+                            InvokeUnit(_cloud, _thenUnitInfos[idx], units[idx], InvokeUnitMethod.Commit, tranOrm);
 #else
-                            await fsql.Insert(_thenUnitInfos[idx]).ExecuteAffrowsAsync();
-                            await units[idx].Commit();
+                            await tranOrm.Insert(_thenUnitInfos[idx]).ExecuteAffrowsAsync();
+                            await InvokeUnitAsync(_cloud, _thenUnitInfos[idx], units[idx], InvokeUnitMethod.Commit, tranOrm);
 #endif
                             tran.Commit();
                             tranIsCommited = true;
@@ -157,20 +166,26 @@ namespace FreeSql.Cloud.Saga
             if (stateType == null) return;
             (unit as ISagaUnitSetter)?.SetState(Newtonsoft.Json.JsonConvert.DeserializeObject(unitInfo.State, stateType));
         }
+
+
 #if net40
         static void Cancel(FreeSqlCloud<TDBKey> cloud, string tid, bool retry)
         {
             var masterInfo = cloud._ormMaster.Select<SagaMasterInfo>().Where(a => a.Tid == tid && a.Status == SagaMasterStatus.Pending && a.RetryCount <= a.MaxRetryCount).First();
             if (masterInfo == null) return;
             var unitInfos = cloud._ormMaster.Select<SagaUnitInfo>().Where(a => a.Tid == tid).OrderBy(a => a.Index).ToList();
+            var units = LocalGetUnits();
+            Cancel(cloud, masterInfo, unitInfos, units, retry);
 #else
         async static Task CancelAsync(FreeSqlCloud<TDBKey> cloud, string tid, bool retry)
         {
             var masterInfo = await cloud._ormMaster.Select<SagaMasterInfo>().Where(a => a.Tid == tid && a.Status == SagaMasterStatus.Pending && a.RetryCount <= a.MaxRetryCount).FirstAsync();
             if (masterInfo == null) return;
             var unitInfos = await cloud._ormMaster.Select<SagaUnitInfo>().Where(a => a.Tid == tid).OrderBy(a => a.Index).ToListAsync();
+            var units = LocalGetUnits();
+            await CancelAsync(cloud, masterInfo, unitInfos, units, retry);
 #endif
-            var units = unitInfos.Select(unitInfo =>
+            ISagaUnit[] LocalGetUnits() => unitInfos.Select(unitInfo =>
             {
                 try
                 {
@@ -189,11 +204,6 @@ namespace FreeSql.Cloud.Saga
                 }
             })
             .ToArray();
-#if net40
-            Cancel(cloud, masterInfo, unitInfos, units, retry);
-#else
-            await CancelAsync(cloud, masterInfo, unitInfos, units, retry);
-#endif
         }
 
 #if net40
@@ -227,17 +237,17 @@ namespace FreeSql.Cloud.Saga
                                 var tranIsCommited = false;
                                 try
                                 {
-                                    var fsql = FreeSqlTransaction.Create(ormMaster, () => tran);
+                                    var tranOrm = FreeSqlTransaction.Create(ormMaster, () => tran);
                                     (units[idx] as ISagaUnitSetter)?.SetUnit(unitInfo);
-                                    var update = fsql.Update<SagaUnitInfo>()
+                                    var update = tranOrm.Update<SagaUnitInfo>()
                                         .Where(a => a.Tid == masterInfo.Tid && a.Index == idx + 1 && a.Stage == SagaUnitStage.Commit)
                                         .Set(a => a.Stage, SagaUnitStage.Cancel);
 #if net40
                                     if (update.ExecuteAffrows() == 1)
-                                        units[idx].Cancel();
+                                        InvokeUnit(cloud, unitInfo, units[idx], InvokeUnitMethod.Cancel, tranOrm);
 #else
                                     if (await update.ExecuteAffrowsAsync() == 1)
-                                        await units[idx].Cancel();
+                                        await InvokeUnitAsync(cloud, unitInfo, units[idx], InvokeUnitMethod.Cancel, tranOrm);
 #endif
                                     tran.Commit();
                                     tranIsCommited = true;

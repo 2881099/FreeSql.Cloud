@@ -41,14 +41,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BuySagaUnit.cs" />
+    <Compile Include="BuyTccUnit.cs" />
+    <Compile Include="DB.cs" />
+    <Compile Include="Entity.cs" />
     <Compile Include="Program.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\FreeSql.Cloud\FreeSql.Cloud.csproj">
-      <Project>{61c51d8c-d741-4100-bd28-7f79d3ef9142}</Project>
-      <Name>FreeSql.Cloud</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="FreeSql">
@@ -57,6 +54,12 @@
     <PackageReference Include="FreeSql.Provider.Sqlite">
       <Version>3.2.665</Version>
     </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\FreeSql.Cloud\FreeSql.Cloud.csproj">
+      <Project>{61c51d8c-d741-4100-bd28-7f79d3ef9142}</Project>
+      <Name>FreeSql.Cloud</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
