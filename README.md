@@ -158,7 +158,7 @@ await fsql.StartTcc(orderId.ToString(), "支付购买",
 2022-08-16 10:47:53 【app001】TCC (3a9c548f-95b1-43b4-b918-9c3817d4c316, 支付购买) Completed, all units CANCEL successfully
 ```
 
-> 请查看[完整的演示代码](https://github.com/2881099/FreeSql.Cloud/blob/master/examples/net60_tcc_saga/Program.cs)
+> 请查看[TCC/SAGA完整的演示代码](https://github.com/2881099/FreeSql.Cloud/blob/master/examples/net60_tcc_saga/Program.cs)
 
 SAGA 事务特点：
 
@@ -166,8 +166,6 @@ SAGA 事务特点：
 - Commit 全部环节通过，代表业务交付成功；
 - Commit 任何环节失败，代表业务失败，进入 Cancel 环节；
 - Cancel 失败会进行重试N次，直到取消成功，或者人工干预；
-
-> 请查看[完整的演示代码](https://github.com/2881099/FreeSql.Cloud/blob/master/examples/net60_tcc_saga/Program.cs)
 
 2、唯一标识
 
