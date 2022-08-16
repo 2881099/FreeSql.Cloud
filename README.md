@@ -114,8 +114,6 @@ public class FreeSqlCloud<TDBKey> : IFreeSql
 
 AsyncLocal 负责存储执行上下文 DBKey 值，在异步或同步并发场景是安全的，fsql.Change(DbEnum.db3) 会改变该值。fsql.Change/Use 方法返回 IFreeSql 特殊实现，大大降低 IdleBus 因误用被释放的异常（原因：IdleBus.Get 返回值不允许被外部变量长期引用，应每次 Get 获取对象）
 
-> 综上 FreeSqlCloud 多线程并发是安全的。
-
 ## 关于分布式事务
 
 1、简介
