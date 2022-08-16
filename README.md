@@ -142,7 +142,7 @@ TCC 事务特点：
 - Confirm 失败会进行重试N次，直到交付成功，或者人工干预；
 - Cancel 失败会进行重试N次，直到取消成功，或者人工干预；
 
-> 请看下方示例代码，或者[演示项目](https://github.com/2881099/FreeSql.Cloud/blob/master/examples/net60_tcc_saga/Program.cs)
+> 请看下方示例代码，或者查看[购买商品流程的演示项目](https://github.com/2881099/FreeSql.Cloud/blob/master/examples/net60_tcc_saga/Program.cs)
 
 SAGA 事务特点：
 
@@ -151,7 +151,7 @@ SAGA 事务特点：
 - Commit 任何环节失败，代表业务失败，进入 Cancel 环节；
 - Cancel 失败会进行重试N次，直到取消成功，或者人工干预；
 
-> 请查看[演示项目](https://github.com/2881099/FreeSql.Cloud/blob/master/examples/net60_tcc_saga/Program.cs)
+> 请查看[购买商品流程的演示项目](https://github.com/2881099/FreeSql.Cloud/blob/master/examples/net60_tcc_saga/Program.cs)
 
 2、唯一标识
 
@@ -226,7 +226,7 @@ await fsql.StartTcc(orderId.ToString(), "支付购买",
     .Then<Tcc1>(DbEnum.db1, new BuyUnitState { UserId = 1, Point = 10, GoodsId = 1, OrderId = orderId })
     .Then<Tcc2>(DbEnum.db2, new BuyUnitState { UserId = 1, Point = 10, GoodsId = 1, OrderId = orderId })
     .Then<Tcc3>(DbEnum.db3, new BuyUnitState { UserId = 1, Point = 10, GoodsId = 1, OrderId = orderId })
-     // 每个单元所需 State 都可以不同
+     // 每个单元所需 State 数据类型可以不同
     .ExecuteAsync();
 ```
 
@@ -355,7 +355,7 @@ public class Order
 
 ## Saga 事务
 
-> 请查看 [支付购买商品演示项目](https://github.com/2881099/FreeSql.Cloud/blob/master/examples/net60_tcc_saga/Program.cs)
+> 请查看 [购买商品流程的演示项目](https://github.com/2881099/FreeSql.Cloud/blob/master/examples/net60_tcc_saga/Program.cs)
 
 ```c#
 var tid = Guid.NewGuid().ToString();
