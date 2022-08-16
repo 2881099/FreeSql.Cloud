@@ -126,13 +126,13 @@ public class FreeSqlCloud<TDBKey> : IFreeSql
 
 4、fsql.Select\<T\>() 会调用 IdleBus.Get(AsyncLocal).Select\<T\>()。
 
-> 你还会顾及并发问题吗？
+> 综上结论 FreeSqlCloud 对象多线程并发是安全的。
 
 ## 关于分布式事务
 
 1、简介
 
-FreeSqlCloud 提供 TCC/SAGA 分布式事务调度，遇错重试、程序重启不影响的事务单元管理功能。
+FreeSqlCloud 提供 TCC/SAGA 分布式事务调度，遇错重试、程序重启不影响的事务单元的管理功能。
 
 TCC 事务特点：
 
@@ -142,7 +142,37 @@ TCC 事务特点：
 - Confirm 失败会进行重试N次，直到交付成功，或者人工干预；
 - Cancel 失败会进行重试N次，直到取消成功，或者人工干预；
 
-> 请看下方示例代码，或者查看[购买商品流程的演示代码](https://github.com/2881099/FreeSql.Cloud/blob/master/examples/net60_tcc_saga/Program.cs)
+```c#
+// 测试数据
+fsql.Use(DbEnum.db1).Insert(new User { Id = 1, Name = "testuser01", Point = 10 }).ExecuteAffrows();
+fsql.Use(DbEnum.db2).Insert(new Goods { Id = 1, Title = "testgoods01", Stock = 0 }).ExecuteAffrows();
+
+var orderId = Guid.NewGuid();
+await fsql.StartTcc(orderId.ToString(), "支付购买",
+    new TccOptions
+    {
+        MaxRetryCount = 10,
+        RetryInterval = TimeSpan.FromSeconds(10)
+    })
+    .Then<Tcc1>(DbEnum.db1, new BuyUnitState { UserId = 1, Point = 10, GoodsId = 1, OrderId = orderId })
+    .Then<Tcc2>(DbEnum.db2, new BuyUnitState { UserId = 1, Point = 10, GoodsId = 1, OrderId = orderId })
+    .Then<Tcc3>(DbEnum.db3, new BuyUnitState { UserId = 1, Point = 10, GoodsId = 1, OrderId = orderId })
+    .ExecuteAsync();
+```
+
+```shell
+2022-08-16 10:47:53 【app001】db1 注册成功, 并存储 TCC/SAGA 事务相关数据
+2022-08-16 10:47:53 【app001】成功加载历史未完成 TCC 事务 0 个
+2022-08-16 10:47:53 【app001】成功加载历史未完成 SAGA 事务 0 个
+2022-08-16 10:47:53 【app001】TCC (3a9c548f-95b1-43b4-b918-9c3817d4c316, 支付购买) Created successful, retry count: 10, interval: 10S
+2022-08-16 10:47:53 【app001】TCC (3a9c548f-95b1-43b4-b918-9c3817d4c316, 支付购买) Unit1(第1步：数据库db1 扣除用户积分) TRY successful
+2022-08-16 10:47:53 【app001】数据库使用[Use] db2
+2022-08-16 10:47:53 【app001】TCC (3a9c548f-95b1-43b4-b918-9c3817d4c316, 支付购买) Unit2(第2步：数据库db2 扣除库存) TRY failed, ready to CANCEL, -ERR 扣除库存失败
+2022-08-16 10:47:53 【app001】TCC (3a9c548f-95b1-43b4-b918-9c3817d4c316, 支付购买) Unit1(第1步：数据库db1 扣除用户积分) CANCEL successful
+2022-08-16 10:47:53 【app001】TCC (3a9c548f-95b1-43b4-b918-9c3817d4c316, 支付购买) Completed, all units CANCEL successfully
+```
+
+> 请查看[完整的演示代码](https://github.com/2881099/FreeSql.Cloud/blob/master/examples/net60_tcc_saga/Program.cs)
 
 SAGA 事务特点：
 
@@ -151,7 +181,7 @@ SAGA 事务特点：
 - Commit 任何环节失败，代表业务失败，进入 Cancel 环节；
 - Cancel 失败会进行重试N次，直到取消成功，或者人工干预；
 
-> 请查看[购买商品流程的演示代码](https://github.com/2881099/FreeSql.Cloud/blob/master/examples/net60_tcc_saga/Program.cs)
+> 请查看[完整的演示代码](https://github.com/2881099/FreeSql.Cloud/blob/master/examples/net60_tcc_saga/Program.cs)
 
 2、唯一标识
 
@@ -208,211 +238,3 @@ fsql.Register 第一个注册的称之为【主库】，存储 TCC/SAGA 持久�
 TccUnit、SagaUnit 内部支持调用 webapi/grpc，调用异常时会触发重试调度。
 
 由于网络不确定因素，较坏的情况比如单元调用 webapi/grpc 成功，但是 tcc_unit 表保存状态失败，单元又会进入重试调用，最终导致多次调用 webapi/grpc，所以 web/grpc 提供方应该保证幂等操作，无论多少次调用结果都一致。
-
-## TCC 事务
-
-```c#
-// 测试数据
-fsql.Use(DbEnum.db1).Insert(new User { Id = 1, Name = "testuser01", Point = 10 }).ExecuteAffrows();
-fsql.Use(DbEnum.db2).Insert(new Goods { Id = 1, Title = "testgoods01", Stock = 0 }).ExecuteAffrows();
-
-var orderId = Guid.NewGuid();
-await fsql.StartTcc(orderId.ToString(), "支付购买",
-    new TccOptions
-    {
-        MaxRetryCount = 10,
-        RetryInterval = TimeSpan.FromSeconds(10)
-    })
-    .Then<Tcc1>(DbEnum.db1, new BuyUnitState { UserId = 1, Point = 10, GoodsId = 1, OrderId = orderId })
-    .Then<Tcc2>(DbEnum.db2, new BuyUnitState { UserId = 1, Point = 10, GoodsId = 1, OrderId = orderId })
-    .Then<Tcc3>(DbEnum.db3, new BuyUnitState { UserId = 1, Point = 10, GoodsId = 1, OrderId = orderId })
-     // 每个单元所需 State 数据类型可以不同
-    .ExecuteAsync();
-```
-
-```shell
-2022-08-16 10:47:53 【app001】db1 注册成功, 并存储 TCC/SAGA 事务相关数据
-2022-08-16 10:47:53 【app001】成功加载历史未完成 TCC 事务 0 个
-2022-08-16 10:47:53 【app001】成功加载历史未完成 SAGA 事务 0 个
-2022-08-16 10:47:53 【app001】TCC (3a9c548f-95b1-43b4-b918-9c3817d4c316, 支付购买) Created successful, retry count: 10, interval: 10S
-2022-08-16 10:47:53 【app001】TCC (3a9c548f-95b1-43b4-b918-9c3817d4c316, 支付购买) Unit1(第1步：数据库db1 扣除用户积分) TRY successful
-2022-08-16 10:47:53 【app001】数据库使用[Use] db2
-2022-08-16 10:47:53 【app001】TCC (3a9c548f-95b1-43b4-b918-9c3817d4c316, 支付购买) Unit2(第2步：数据库db2 扣除库存) TRY failed, ready to CANCEL, -ERR 扣除库存失败
-2022-08-16 10:47:53 【app001】TCC (3a9c548f-95b1-43b4-b918-9c3817d4c316, 支付购买) Unit1(第1步：数据库db1 扣除用户积分) CANCEL successful
-2022-08-16 10:47:53 【app001】TCC (3a9c548f-95b1-43b4-b918-9c3817d4c316, 支付购买) Completed, all units CANCEL successfully
-```
-
-```c#
-// 状态数据
-class BuyUnitState
-{
-    public int UserId { get; set; }
-    public int Point { get; set; }
-    public int GoodsId { get; set; }
-    public Guid OrderId { get; set; }
-}
-
-[Description("第1步：数据库db1 扣除用户积分")]
-class Tcc1 : TccUnit<BuyUnitState>
-{
-    public override async Task Try()
-    {
-        var affrows = await Orm.Update<User>()
-            .Set(a => a.Point - State.Point)
-            .Where(a => a.Id == State.UserId && a.Point >= State.Point)
-            .ExecuteAffrowsAsync();
-        if (affrows <= 0) throw new Exception("扣除积分失败");
-
-        //记录积分变动日志？
-    }
-    public override Task Confirm()
-    {
-        return Task.CompletedTask;
-    }
-    public override async Task Cancel()
-    {
-        await Orm.Update<User>()
-            .Set(a => a.Point + State.Point)
-            .Where(a => a.Id == State.UserId)
-            .ExecuteAffrowsAsync(); //退还积分
-
-        //记录积分变动日志？
-    }
-}
-[Description("第2步：数据库db2 扣除库存")]
-class Tcc2 : TccUnit<BuyUnitState>
-{
-    public override async Task Try()
-    {
-        var affrows = await Orm.Update<Goods>()
-            .Set(a => a.Stock - 1)
-            .Where(a => a.Id == State.GoodsId && a.Stock >= 1)
-            .ExecuteAffrowsAsync();
-        if (affrows <= 0) throw new Exception("扣除库存失败");
-    }
-    public override Task Confirm()
-    {
-        return Task.CompletedTask;
-    }
-    public override async Task Cancel()
-    {
-        await Orm.Update<Goods>()
-            .Set(a => a.Stock + 1)
-            .Where(a => a.Id == State.GoodsId)
-            .ExecuteAffrowsAsync(); //退还库存
-    }
-}
-[Description("第3步：数据库db3 创建订单")]
-class Tcc3 : TccUnit<BuyUnitState>
-{
-    public override async Task Try()
-    {
-        await Orm.Insert(new Order { Id = State.OrderId, Status = Order.OrderStatus.Pending, CreateTime = DateTime.Now })
-            .ExecuteAffrowsAsync();
-    }
-    public override async Task Confirm()
-    {
-        //幂等交付
-        await Orm.Update<Order>()
-                .Set(a => a.Status == Order.OrderStatus.Success)
-                .Where(a => a.Id == State.OrderId && a.Status == Order.OrderStatus.Pending)
-                .ExecuteAffrowsAsync();
-    }
-    public override Task Cancel()
-    {
-        return Task.CompletedTask;
-    }
-}
-
-#region db1 实体类
-public class User
-{
-    public int Id { get; set; }
-    public string Name { get; set; }
-    public int Point { get; set; }
-}
-#endregion
-
-#region db2 实体类
-public class Goods
-{
-    public int Id { get; set; }
-    public string Title { get; set; }
-    public int Stock { get; set; }
-}
-#endregion
-
-#region db3 实体类
-public class Order
-{
-    public Guid Id { get; set; }
-    public OrderStatus Status { get; set; }
-    public enum OrderStatus { Pending, Success, Canceled }
-    public DateTime CreateTime { get; set; }
-}
-#endregion
-```
-
-## Saga 事务
-
-> 请查看 [购买商品流程的演示代码](https://github.com/2881099/FreeSql.Cloud/blob/master/examples/net60_tcc_saga/Program.cs)
-
-```c#
-var tid = Guid.NewGuid().ToString();
-await fsql
-    .StartSaga(tid, "发表评论", 
-        new SagaOptions
-        {
-            MaxRetryCount = 5,
-            RetryInterval = TimeSpan.FromSeconds(5)
-        })
-    .Then<Saga1>(new LocalState { Id = 1, Name = "tcc1" })
-    .Then<Saga2>()
-    .Then<Saga3>(new LocalState { Id = 3, Name = "tcc3" })
-    .ExecuteAsync();
-
-// 状态数据
-class LocalState
-{
-    public int Id { get; set; }
-    public string Name { get; set; }
-}
-[Description("第1步")]
-class Saga1 : SagaUnit<LocalState>
-{
-    public override Task Cancel() => throw new Exception("dkdkdk");
-    public override Task Commit() => Task.CompletedTask;
-}
-[Description("第2步")]
-class Saga2 : SagaUnit<LocalState>
-{
-    public override Task Cancel() => Task.CompletedTask;
-    public override Task Commit() => Task.CompletedTask;
-}
-[Description("第3步")]
-class Saga3 : SagaUnit<LocalState>
-{
-    public override Task Cancel() => Task.CompletedTask;
-    public override Task Commit() => throw new Exception("xxx");
-}
-```
-
-执行结果：
-
-```bash
-2020-12-02 14:07:30 【myapp】db1 注册成功, 并存储 TCC/SAGA 事务相关数据
-2020-12-02 14:07:31 【myapp】成功加载历史未完成 TCC 事务 0 个
-2020-12-02 14:07:31 【myapp】成功加载历史未完成 SAGA 事务 0 个
-2020-12-02 14:07:31 【myapp】SAGA(e5469b8f-c27f-498a-a0f8-6dd128967dca, 发表评论) Created successful, retry count: 5, interval: 5S
-2020-12-02 14:07:31 【myapp】SAGA(e5469b8f-c27f-498a-a0f8-6dd128967dca, 发表评论) Unit1(第1步) COMMIT successful
-2020-12-02 14:07:31 【myapp】SAGA(e5469b8f-c27f-498a-a0f8-6dd128967dca, 发表评论) Unit2(第2步) COMMIT successful
-2020-12-02 14:07:31 【myapp】SAGA(e5469b8f-c27f-498a-a0f8-6dd128967dca, 发表评论) Unit3(第3步) COMMIT failed, ready to CANCEL, -ERR xxx
-2020-12-02 14:07:31 【myapp】SAGA(e5469b8f-c27f-498a-a0f8-6dd128967dca, 发表评论) Unit2(第1步) CANCEL successful
-2020-12-02 14:07:31 【myapp】SAGA(e5469b8f-c27f-498a-a0f8-6dd128967dca, 发表评论) Unit1(第1步) CANCEL failed, -ERR dkdkdk
-2020-12-02 14:07:36 【myapp】SAGA(e5469b8f-c27f-498a-a0f8-6dd128967dca, 发表评论) Unit1(第1步) CANCEL failed after 1 retries, -ERR dkdkdk
-2020-12-02 14:07:41 【myapp】SAGA(e5469b8f-c27f-498a-a0f8-6dd128967dca, 发表评论) Unit1(第1步) CANCEL failed after 2 retries, -ERR dkdkdk
-2020-12-02 14:07:47 【myapp】SAGA(e5469b8f-c27f-498a-a0f8-6dd128967dca, 发表评论) Unit1(第1步) CANCEL failed after 3 retries, -ERR dkdkdk
-2020-12-02 14:07:52 【myapp】SAGA(e5469b8f-c27f-498a-a0f8-6dd128967dca, 发表评论) Unit1(第1步) CANCEL failed after 4 retries, -ERR dkdkdk
-2020-12-02 14:07:57 【myapp】SAGA(e5469b8f-c27f-498a-a0f8-6dd128967dca, 发表评论) Unit1(第1步) CANCEL failed after 5 retries, -ERR dkdkdk
-2020-12-02 14:07:57 【myapp】SAGA(e5469b8f-c27f-498a-a0f8-6dd128967dca, 发表评论) Not completed, waiting for manual operation 【人工干预】
-```
