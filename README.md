@@ -147,15 +147,15 @@ await fsql.StartTcc(orderId.ToString(), "支付购买",
 ```
 
 ```shell
-2022-08-16 10:47:53 【app001】db1 注册成功, 并存储 TCC/SAGA 事务相关数据
-2022-08-16 10:47:53 【app001】成功加载历史未完成 TCC 事务 0 个
-2022-08-16 10:47:53 【app001】成功加载历史未完成 SAGA 事务 0 个
-2022-08-16 10:47:53 【app001】TCC (3a9c548f-95b1-43b4-b918-9c3817d4c316, 支付购买) Created successful, retry count: 10, interval: 10S
-2022-08-16 10:47:53 【app001】TCC (3a9c548f-95b1-43b4-b918-9c3817d4c316, 支付购买) Unit1(第1步：数据库db1 扣除用户积分) TRY successful
-2022-08-16 10:47:53 【app001】数据库使用[Use] db2
-2022-08-16 10:47:53 【app001】TCC (3a9c548f-95b1-43b4-b918-9c3817d4c316, 支付购买) Unit2(第2步：数据库db2 扣除库存) TRY failed, ready to CANCEL, -ERR 扣除库存失败
-2022-08-16 10:47:53 【app001】TCC (3a9c548f-95b1-43b4-b918-9c3817d4c316, 支付购买) Unit1(第1步：数据库db1 扣除用户积分) CANCEL successful
-2022-08-16 10:47:53 【app001】TCC (3a9c548f-95b1-43b4-b918-9c3817d4c316, 支付购买) Completed, all units CANCEL successfully
+2022-08-16 10:47:53 【myapp】db1 注册成功, 并存储 TCC/SAGA 事务相关数据
+2022-08-16 10:47:53 【myapp】成功加载历史未完成 TCC 事务 0 个
+2022-08-16 10:47:53 【myapp】成功加载历史未完成 SAGA 事务 0 个
+2022-08-16 10:47:53 【myapp】TCC (3a9c548f-95b1-43b4-b918-9c3817d4c316, 支付购买) Created successful, retry count: 10, interval: 10S
+2022-08-16 10:47:53 【myapp】TCC (3a9c548f-95b1-43b4-b918-9c3817d4c316, 支付购买) Unit1(第1步：数据库db1 扣除用户积分) TRY successful
+2022-08-16 10:47:53 【myapp】数据库使用[Use] db2
+2022-08-16 10:47:53 【myapp】TCC (3a9c548f-95b1-43b4-b918-9c3817d4c316, 支付购买) Unit2(第2步：数据库db2 扣除库存) TRY failed, ready to CANCEL, -ERR 扣除库存失败
+2022-08-16 10:47:53 【myapp】TCC (3a9c548f-95b1-43b4-b918-9c3817d4c316, 支付购买) Unit1(第1步：数据库db1 扣除用户积分) CANCEL successful
+2022-08-16 10:47:53 【myapp】TCC (3a9c548f-95b1-43b4-b918-9c3817d4c316, 支付购买) Completed, all units CANCEL successfully
 ```
 
 > 请查看[TCC/SAGA完整的演示代码](https://github.com/2881099/FreeSql.Cloud/blob/master/examples/net60_tcc_saga/Program.cs)
@@ -221,4 +221,4 @@ fsql.Register 第一个注册的称之为【主库】，存储 TCC/SAGA 持久�
 
 TccUnit、SagaUnit 方法内可以使用 Orm 访问当前事务对象。
 
-单元方法除了操作数据库，也支持远程访问 webapi/grpc，发生异常时触发重试调度。由于网络不确定因素，较坏的情况比如单元调用 webapi/grpc 成功，但是 tcc_unit 表保存状态失败，导致单元又会重试执行，导致多次调用 webapi/grpc，所以 web/grpc 提供方应该保证幂等操作，无论多少次调用结果都一致。
+单元方法除了操作数据库，也支持远程访问 webapi/grpc，发生异常时触发重试调度。由于网络不确定因素，较坏的情况比如单元调用 webapi/grpc 成功，但是 tcc_unit 表保存状态失败，导致单元又会重试执行，所以 web/grpc 提供方应该保证幂等操作，无论多少次调用结果都一致。
