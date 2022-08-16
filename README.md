@@ -93,40 +93,30 @@ fsql.EntitySteering = (_, e) =>
 
 ## 关于并发
 
-FreeSqlCloud 内部使用 IdleBus + AsyncLocal\<string\> 方式实现。
+FreeSqlCloud 内部使用 IdleBus + AsyncLocal\<string\> 方式实现，多线程并发是安全的。
 
-1、FreeSqlCloud 实现了接口 IFreeSql，但它不负责直接交互数据库，只是个代理层。
+FreeSqlCloud 实现了接口 IFreeSql，但它不负责直接交互数据库，只是个代理层。
 
 ```c#
 public class FreeSqlCloud<TDBKey> : IFreeSql
 {
-    AsyncLocal<TDBKey> _dbkeyCurrent = new AsyncLocal<TDBKey>();
-    IFreeSql _ormCurrent => _idlebus.Get(_dbkeyCurrent.Value);
+    AsyncLocal<TDBKey> _currentKey = new AsyncLocal<TDBKey>();
+    IFreeSql _current => _idlebus.Get(_currentKey.Value);
     IdleBus<TDBKey, IFreeSql> _idlebus;
     ...
-    public IAdo Ado => _ormCurrent.Ado;
-    public IAop Aop => _ormCurrent.Aop;
-    public ICodeFirst CodeFirst => _ormCurrent.CodeFirst;
-    public IDbFirst DbFirst => _ormCurrent.DbFirst;
-    public GlobalFilter GlobalFilter => _ormCurrent.GlobalFilter;
+    public IAdo Ado => _current.Ado;
+    public GlobalFilter GlobalFilter => _current.GlobalFilter;
 
-    public void Transaction(Action handler) => _ormCurrent.Transaction(handler);
-    public void Transaction(IsolationLevel isolationLevel, Action handler) => _ormCurrent.Transaction(isolationLevel, handler);
+    public void Transaction(Action handler) => _current.Transaction(handler);
     ...
 }
 ```
 
-2、AsyncLocal 存储执行上下文 DBKey 值，在异步或同步并发场景是安全的，请百度了解。
+AsyncLocal 负责存储执行上下文 DBKey 值，在异步或同步并发场景是安全的，fsql.Change(DbEnum.db3) 会改变该值。
 
-> 注意：异步不使用 await 会脱离执行上下文
+fsql.Change/Use 方法返回 IFreeSql 特殊实现，大大降低 IdleBus 因误用被释放的异常（原因：IdleBus.Get 返回值不允许被外部变量长期引用，应每次 Get 获取对象）
 
-3、fsql.Change(DbEnum.db3) 会改变 AsyncLocal DBKey 值。
-
-> 比 IdleBus.Get 更聪明的返回 IFreeSql 特殊实现，大大降低 IdleBus 误用被释放的异常（原因：IdleBus.Get 返回值不允许被外部变量长期引用，应每次 Get 获取对象）
-
-4、fsql.Select\<T\>() 会调用 IdleBus.Get(AsyncLocal).Select\<T\>()。
-
-> 综上结论 FreeSqlCloud 对象多线程并发是安全的。
+> 综上 FreeSqlCloud 多线程并发是安全的。
 
 ## 关于分布式事务
 
