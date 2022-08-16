@@ -169,18 +169,18 @@ SAGA 事务特点：
 
 2、唯一标识
 
-FreeSqlCloud 使用唯一标识区分，达到事务管理互不冲突的目的，举例：
+FreeSqlCloud 使用唯一标识区分，解决冲突问题，举例：
 
 ```c#
 var fsql = new FreeSqlCloud<DbEnum>("myapp");
 var fsql2 = new FreeSqlCloud<DbEnum>("myapp2");
 ```
 
-fsql2 访问不到 fsql 产生的分布式事务，如果 webapi 程序部署多实例，需要设置多个实例对应的 name，以作区分。
+fsql2 访问不到 fsql 产生的分布式事务，如果 webapi 部署多实例，只需要设置实例各自对应的 name 区分即可。
 
 3、持久化
 
-fsql.Register 第一个注册的称之为【主库】，存储 TCC/SAGA 持久数据，当程序重新启动的时候，会将未处理完的事务载入内存重新调度。
+fsql.Register 第一个注册的称之为【主库】，存储 TCC/SAGA 持久数据，程序启动的时候，会将未处理完的事务载入内存重新调度。
 
 自动创建表 tcc_myapp、saga_myapp：
 
@@ -219,6 +219,6 @@ fsql.Register 第一个注册的称之为【主库】，存储 TCC/SAGA 持久�
 
 4、单元
 
-TccUnit、SagaUnit 内部支持调用 webapi/grpc，调用异常时会触发重试调度。
+TccUnit、SagaUnit 方法内可以使用 Orm 访问当前事务对象。
 
-由于网络不确定因素，较坏的情况比如单元调用 webapi/grpc 成功，但是 tcc_unit 表保存状态失败，单元又会进入重试调用，最终导致多次调用 webapi/grpc，所以 web/grpc 提供方应该保证幂等操作，无论多少次调用结果都一致。
+单元方法除了操作数据库，也支持远程访问 webapi/grpc，发生异常时触发重试调度。由于网络不确定因素，较坏的情况比如单元调用 webapi/grpc 成功，但是 tcc_unit 表保存状态失败，导致单元又会重试执行，导致多次调用 webapi/grpc，所以 web/grpc 提供方应该保证幂等操作，无论多少次调用结果都一致。
