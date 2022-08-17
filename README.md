@@ -118,7 +118,7 @@ AsyncLocal 负责存储执行上下文 DBKey 值，在异步或同步并发场�
 
 1、简介
 
-FreeSqlCloud 提供 TCC/SAGA 分布式事务调度，遇错重试、程序重启不影响的事务单元的管理功能。
+FreeSqlCloud 提供 TCC/SAGA 分布式事务调度、失败重试、持久化重启后重新唤醒事务单元、等管理功能。
 
 TCC 事务特点：
 
@@ -226,44 +226,39 @@ TccUnit、SagaUnit 方法内可以使用 Orm 访问当前事务对象。
 ```c#
 // HTTP 服务编排？？
 var orderId = Guid.NewGuid();
-await DB.Cloud.StartTcc(orderId.ToString(), "支付购买webapi",
-    new TccOptions
+await DB.Cloud.StartSaga(orderId.ToString(), "支付购买webapi(saga)",
+    new SagaOptions
     {
         MaxRetryCount = 10,
         RetryInterval = TimeSpan.FromSeconds(10)
     })
-    .Then<HttpTcc>(default, new HttpUnitState
+    .Then<HttpSaga>(default, new HttpUnitState
     {
-        Url = "https://192.168.1.100/tcc/UserPoint",
+        Url = "https://192.168.1.100/saga/UserPoint",
         Data = "UserId=1&Point=10&GoodsId=1&OrderId=" + orderId
     })
-    .Then<HttpTcc>(default, new HttpUnitState
+    .Then<HttpSaga>(default, new HttpUnitState
     {
-        Url = "https://192.168.1.100/tcc/GoodsStock",
+        Url = "https://192.168.1.100/saga/GoodsStock",
         Data = "UserId=1&Point=10&GoodsId=1&OrderId=" + orderId
     })
-    .Then<HttpTcc>(default, new HttpUnitState
+    .Then<HttpSaga>(default, new HttpUnitState
     {
-        Url = "https://192.168.1.100/tcc/OrderNew",
+        Url = "https://192.168.1.100/saga/OrderNew",
         Data = "UserId=1&Point=10&GoodsId=1&OrderId=" + orderId
     })
     .ExecuteAsync();
 
-class HttpTcc : TccUnit<HttpUnitState>
+class HttpSaga : SagaUnit<HttpUnitState>
 {
-    public override Task Try()
+    public override Task Commit()
     {
-        Console.WriteLine("请求 webapi：" + State.Url + "/Try" + State.Data);
-        return Task.CompletedTask;
-    }
-    public override Task Confirm()
-    {
-        Console.WriteLine("请求 webapi：" + State.Url + "/Confirm" + State.Data);
+        //Console.WriteLine("请求 webapi：" + State.Url + "/Commit" + State.Data);
         return Task.CompletedTask;
     }
     public override Task Cancel()
     {
-        Console.WriteLine("请求 webapi：" + State.Url + "/Cancel" + State.Data);
+        //Console.WriteLine("请求 webapi：" + State.Url + "/Cancel" + State.Data);
         return Task.CompletedTask;
     }
 }

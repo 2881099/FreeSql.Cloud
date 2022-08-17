@@ -14,6 +14,7 @@ namespace net60_tcc_saga
             await TestTcc();
             await TestSaga();
             //await TestHttpTcc();
+            //await TestHttpSaga();
 
             Console.ReadKey();
             DB.Cloud.Dispose();
@@ -49,6 +50,47 @@ namespace net60_tcc_saga
                 .ExecuteAsync();
         }
 
+
+        async static Task TestHttpSaga()
+        {
+            var orderId = Guid.NewGuid();
+            await DB.Cloud.StartSaga(orderId.ToString(), "支付购买webapi(saga)",
+                new SagaOptions
+                {
+                    MaxRetryCount = 10,
+                    RetryInterval = TimeSpan.FromSeconds(10)
+                })
+                .Then<HttpSaga>(default, new HttpUnitState
+                {
+                    Url = "https://192.168.1.100/saga/UserPoint",
+                    Data = "UserId=1&Point=10&GoodsId=1&OrderId=" + orderId
+                })
+                .Then<HttpSaga>(default, new HttpUnitState
+                {
+                    Url = "https://192.168.1.100/saga/GoodsStock",
+                    Data = "UserId=1&Point=10&GoodsId=1&OrderId=" + orderId
+                })
+                .Then<HttpSaga>(default, new HttpUnitState
+                {
+                    Url = "https://192.168.1.100/saga/OrderNew",
+                    Data = "UserId=1&Point=10&GoodsId=1&OrderId=" + orderId
+                })
+                .ExecuteAsync();
+        }
+        class HttpSaga : SagaUnit<HttpUnitState>
+        {
+            public override Task Commit()
+            {
+                //Console.WriteLine("请求 webapi：" + State.Url + "/Commit" + State.Data);
+                return Task.CompletedTask;
+            }
+            public override Task Cancel()
+            {
+                //Console.WriteLine("请求 webapi：" + State.Url + "/Cancel" + State.Data);
+                return Task.CompletedTask;
+            }
+        }
+
         async static Task TestHttpTcc()
         {
             var orderId = Guid.NewGuid();
@@ -75,8 +117,6 @@ namespace net60_tcc_saga
                 })
                 .ExecuteAsync();
         }
-
-
         class HttpTcc : TccUnit<HttpUnitState>
         {
             public override Task Try()
