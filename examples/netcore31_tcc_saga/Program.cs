@@ -13,6 +13,7 @@ namespace net60_tcc_saga
 
             await TestTcc();
             await TestSaga();
+            //await TestHttpTcc();
 
             Console.ReadKey();
             DB.Cloud.Dispose();
@@ -46,6 +47,58 @@ namespace net60_tcc_saga
                 .Then<Saga2>(DbEnum.db2, new SagaUnit2State { UserId = 1, Point = 10, GoodsId = 1, OrderId = orderId })
                 .Then<Saga3>(DbEnum.db3, new SagaUnit3State { UserId = 1, Point = 10, GoodsId = 1, OrderId = orderId })
                 .ExecuteAsync();
+        }
+
+        async static Task TestHttpTcc()
+        {
+            var orderId = Guid.NewGuid();
+            await DB.Cloud.StartTcc(orderId.ToString(), "支付购买webapi",
+                new TccOptions
+                {
+                    MaxRetryCount = 10,
+                    RetryInterval = TimeSpan.FromSeconds(10)
+                })
+                .Then<HttpTcc>(default, new HttpUnitState
+                {
+                    Url = "https://192.168.1.100/tcc/UserPoint",
+                    Data = "UserId=1&Point=10&GoodsId=1&OrderId=" + orderId
+                })
+                .Then<HttpTcc>(default, new HttpUnitState
+                {
+                    Url = "https://192.168.1.100/tcc/GoodsStock",
+                    Data = "UserId=1&Point=10&GoodsId=1&OrderId=" + orderId
+                })
+                .Then<HttpTcc>(default, new HttpUnitState
+                {
+                    Url = "https://192.168.1.100/tcc/OrderNew",
+                    Data = "UserId=1&Point=10&GoodsId=1&OrderId=" + orderId
+                })
+                .ExecuteAsync();
+        }
+
+
+        class HttpTcc : TccUnit<HttpUnitState>
+        {
+            public override Task Try()
+            {
+                //Console.WriteLine("请求 webapi：" + State.Url + "/Try" + State.Data);
+                return Task.CompletedTask;
+            }
+            public override Task Confirm()
+            {
+                //Console.WriteLine("请求 webapi：" + State.Url + "/Confirm" + State.Data);
+                return Task.CompletedTask;
+            }
+            public override Task Cancel()
+            {
+                //Console.WriteLine("请求 webapi：" + State.Url + "/Cancel" + State.Data);
+                return Task.CompletedTask;
+            }
+        }
+        class HttpUnitState
+        {
+            public string Url { get; set; }
+            public string Data { get; set; }
         }
     }
 

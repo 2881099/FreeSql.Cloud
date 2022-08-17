@@ -222,3 +222,55 @@ fsql.Register 第一个注册的称之为【主库】，存储 TCC/SAGA 持久�
 TccUnit、SagaUnit 方法内可以使用 Orm 访问当前事务对象。
 
 单元方法除了操作数据库，也支持远程访问 webapi/grpc，发生异常时触发重试调度。由于网络不确定因素，较坏的情况比如单元调用 webapi/grpc 成功，但是 tcc_unit 表保存状态失败，导致单元又会重试执行，导致多次调用 webapi/grpc，所以 web/grpc 提供方应该保证幂等操作，无论多少次调用结果都一致。
+
+```c#
+// HTTP 服务编排？？
+var orderId = Guid.NewGuid();
+await DB.Cloud.StartTcc(orderId.ToString(), "支付购买webapi",
+    new TccOptions
+    {
+        MaxRetryCount = 10,
+        RetryInterval = TimeSpan.FromSeconds(10)
+    })
+    .Then<HttpTcc>(default, new HttpUnitState
+    {
+        Url = "https://192.168.1.100/tcc/UserPoint",
+        Data = "UserId=1&Point=10&GoodsId=1&OrderId=" + orderId
+    })
+    .Then<HttpTcc>(default, new HttpUnitState
+    {
+        Url = "https://192.168.1.100/tcc/GoodsStock",
+        Data = "UserId=1&Point=10&GoodsId=1&OrderId=" + orderId
+    })
+    .Then<HttpTcc>(default, new HttpUnitState
+    {
+        Url = "https://192.168.1.100/tcc/OrderNew",
+        Data = "UserId=1&Point=10&GoodsId=1&OrderId=" + orderId
+    })
+    .ExecuteAsync();
+
+
+class HttpTcc : TccUnit<HttpUnitState>
+{
+    public override Task Try()
+    {
+        Console.WriteLine("请求 webapi：" + State.Url + "/Try" + State.Data);
+        return Task.CompletedTask;
+    }
+    public override Task Confirm()
+    {
+        Console.WriteLine("请求 webapi：" + State.Url + "/Confirm" + State.Data);
+        return Task.CompletedTask;
+    }
+    public override Task Cancel()
+    {
+        Console.WriteLine("请求 webapi：" + State.Url + "/Cancel" + State.Data);
+        return Task.CompletedTask;
+    }
+}
+class HttpUnitState
+{
+    public string Url { get; set; }
+    public string Data { get; set; }
+}
+```
