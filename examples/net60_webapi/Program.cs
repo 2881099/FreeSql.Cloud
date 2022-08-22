@@ -49,27 +49,38 @@ class UserService
         m_repo3 = repo3;
     }
 
-    [Transactional(Propagation = Propagation.Required)] //db1
     public void Test01()
+    {
+        Console.WriteLine("aaa");
+
+        Test02().Wait();
+
+        Console.WriteLine("bbb");
+    }
+
+    [Transactional(DbEnum.db1, Propagation = Propagation.Required)] //db1
+    [Transactional(DbEnum.db3)] //db1
+    async public Task Test02()
     {
         Console.WriteLine("xxx");
 
-        Test02();
+        Test03();
 
         Console.WriteLine("yyy");
+
+        await Task.CompletedTask;
     }
 
-    [Transactional(Propagation = Propagation.Never)] //db1
-    [TransactionalDb2]
-    public void Test02()
+    [Transactional(DbEnum.db2, Propagation = Propagation.Never)] //db1
+    public void Test03()
     {
-        //ÊÂÎñ
+        Console.WriteLine("zzz");
     }
 }
 
 class UserRepository : RepositoryCloud<User>, IBaseRepository<User>
 {
-    public UserRepository(UnitOfWorkManagerCloud uowm) : base(DbEnum.db2, uowm) { }
+    public UserRepository(UnitOfWorkManagerCloud uowm) : base(DbEnum.db3, uowm) { }
 
     //todo..
 }
@@ -125,17 +136,6 @@ class RepositoryCloud<T, TKey> : DefaultRepository<T, TKey> where T : class
     }
 }
 
-
-[AttributeUsage(AttributeTargets.Method)]
-public class TransactionalDb2Attribute : TransactionalAttribute
-{
-    public TransactionalDb2Attribute() : base(DbEnum.db2) { }
-}
-[AttributeUsage(AttributeTargets.Method)]
-public class TransactionalDb3Attribute : TransactionalAttribute
-{
-    public TransactionalDb3Attribute() : base(DbEnum.db3) { }
-}
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
 public class TransactionalAttribute : Rougamo.MoAttribute
 {
@@ -144,8 +144,7 @@ public class TransactionalAttribute : Rougamo.MoAttribute
     IsolationLevel? m_IsolationLevel;
     readonly DbEnum m_db;
 
-    public TransactionalAttribute() { }
-    protected TransactionalAttribute(DbEnum db)
+    public TransactionalAttribute(DbEnum db)
     {
         m_db = db;
     }

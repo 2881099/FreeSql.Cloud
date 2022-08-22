@@ -9,7 +9,7 @@
   <ItemGroup>
     <PackageReference Include="FreeSql.DbContext" Version="3.2.666-preview20220823" />
     <PackageReference Include="FreeSql.Provider.Sqlite" Version="3.2.666-preview20220823" />
-    <PackageReference Include="Rougamo.Fody" Version="1.1.1" />
+    <PackageReference Include="Rougamo.Fody" Version="1.1.2-beta" />
   </ItemGroup>
 
   <ItemGroup>
