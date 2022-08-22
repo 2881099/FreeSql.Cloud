@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FreeSql.DbContext" Version="3.2.666-preview20220823" />
+    <PackageReference Include="FreeSql.Provider.Sqlite" Version="3.2.666-preview20220823" />
+    <PackageReference Include="Rougamo.Fody" Version="1.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\FreeSql.Cloud\FreeSql.Cloud.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -18,6 +18,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "net40_tcc_saga", "examples\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "netcore31_tcc_saga", "examples\netcore31_tcc_saga\netcore31_tcc_saga.csproj", "{82D6631D-A5D1-4AA6-B326-13376B6CB7D4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "net60_webapi", "examples\net60_webapi\net60_webapi.csproj", "{10029FBE-B53F-4E08-9C8B-0C15545A4DB9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -40,6 +42,10 @@ Global
 		{82D6631D-A5D1-4AA6-B326-13376B6CB7D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{82D6631D-A5D1-4AA6-B326-13376B6CB7D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{82D6631D-A5D1-4AA6-B326-13376B6CB7D4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{10029FBE-B53F-4E08-9C8B-0C15545A4DB9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{10029FBE-B53F-4E08-9C8B-0C15545A4DB9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{10029FBE-B53F-4E08-9C8B-0C15545A4DB9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{10029FBE-B53F-4E08-9C8B-0C15545A4DB9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -48,6 +54,7 @@ Global
 		{FC24BF68-B403-4943-A696-6BC74C4D696A} = {12598115-AC36-430B-98D7-3C27D29201D7}
 		{5DE53692-4AE5-4DA5-B2ED-2FA9AEA06AA0} = {12598115-AC36-430B-98D7-3C27D29201D7}
 		{82D6631D-A5D1-4AA6-B326-13376B6CB7D4} = {12598115-AC36-430B-98D7-3C27D29201D7}
+		{10029FBE-B53F-4E08-9C8B-0C15545A4DB9} = {12598115-AC36-430B-98D7-3C27D29201D7}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {932A1C6F-1A3C-4545-BB25-76B228D02D85}
