@@ -9,7 +9,7 @@ using System.Numerics;
 using System.Reflection;
 using System.Text;
 
-static class InternalExtensions
+static class FreesqlCloudInternalExtensions
 {
     #region ExpressionTree
     static int SetSetPropertyOrFieldValueSupportExpressionTreeFlag = 1;

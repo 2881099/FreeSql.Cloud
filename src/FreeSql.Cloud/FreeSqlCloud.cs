@@ -7,12 +7,17 @@ using System.Collections.Concurrent;
 using System.Data;
 using System.Threading;
 using FreeSql.Cloud.Model;
+using FreeSql.Cloud.Abstract;
 
 namespace FreeSql
 {
     //public class FreeSqlCloud : FreeSqlCloud<string> { }
-    public partial class FreeSqlCloud<TDBKey> : IFreeSql
+    public partial class FreeSqlCloud<TDBKey> : FreeSqlCloudBase, IFreeSql
     {
+        internal override string GetDBKey() => _dbkey.ToInvariantCultureToString();
+        internal override IFreeSql UseDBKey(string dbkey) => Use((TDBKey)typeof(TDBKey).FromObject(dbkey));
+        internal override IFreeSql ChangeDBKey(string dbkey) => Change((TDBKey)typeof(TDBKey).FromObject(dbkey));
+
         public string DistributeKey { get; }
         public Action<string> DistributeTrace;
 
@@ -64,10 +69,7 @@ namespace FreeSql
             DistributeTrace?.Invoke($"{DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")} 【{(DistributeKey ?? "FreeSql.Cloud")}】{log}");
         }
 
-        public FreeSqlCloud() : this(null)
-        {
-        }
-
+        public FreeSqlCloud() : this(null) { }
         public FreeSqlCloud(string distributeKey = "master")
         {
             DistributeKey = distributeKey?.Trim();
@@ -84,7 +86,8 @@ namespace FreeSql
         /// <returns></returns>
         public IFreeSql Change(TDBKey dbkey)
         {
-            if (_distributeTraceEnable) _distributedTraceCall($"数据库切换[Change] {dbkey}");
+            var oldkey = _dbkeyCurrent.Value;
+            if (_distributeTraceEnable && object.Equals(dbkey, oldkey) == false) _distributedTraceCall($"数据库切换[Change] {oldkey} -> {dbkey}");
             _dbkeyCurrent.Value = dbkey;
             return new FreeSqlCloundSnapshot<TDBKey>(this, dbkey);
         }
@@ -95,7 +98,8 @@ namespace FreeSql
         /// <returns></returns>
         public IFreeSql Use(TDBKey dbkey)
         {
-            if (_distributeTraceEnable) _distributedTraceCall($"数据库使用[Use] {dbkey}");
+            var oldkey = _dbkeyCurrent.Value;
+            if (_distributeTraceEnable && object.Equals(dbkey, oldkey) == false) _distributedTraceCall($"数据库使用[Use] {dbkey}");
             return new FreeSqlCloundSnapshot<TDBKey>(this, dbkey);
         }
         internal IFreeSql GetBySnapshot(TDBKey dbkey)
@@ -243,5 +247,6 @@ namespace FreeSql
         {
             return GetCrudOrm(nameof(InsertOrUpdate), typeof(T1)).InsertOrUpdate<T1>();
         }
+
     }
 }

@@ -17,6 +17,15 @@ builder.Services.AddScoped(typeof(BaseRepository<,>), typeof(RepositoryCloud<,>)
 foreach (var repositoryType in typeof(User).Assembly.GetTypes().Where(a => a.IsAbstract == false && typeof(IBaseRepository).IsAssignableFrom(a)))
     builder.Services.AddScoped(repositoryType);
 
+var repo1 = DB.Cloud.GetCloudRepository<User>();
+Console.WriteLine(repo1.Orm.Ado.ConnectionString);
+DB.Cloud.Change(DbEnum.db2);
+Console.WriteLine(repo1.Orm.Ado.ConnectionString);
+DB.Cloud.Change(DbEnum.db3);
+Console.WriteLine(repo1.Orm.Ado.ConnectionString);
+DB.Cloud.Change(DbEnum.db1);
+Console.WriteLine(repo1.Orm.Ado.ConnectionString);
+
 builder.Services.AddScoped<UserService>();
 
 var app = builder.Build();
@@ -59,7 +68,7 @@ class UserService
     }
 
     [Transactional(DbEnum.db1, Propagation = Propagation.Required)] //db1
-    [Transactional(DbEnum.db3)] //db1
+    [Transactional(DbEnum.db3)] //db3
     async public Task Test02()
     {
         Console.WriteLine("xxx");

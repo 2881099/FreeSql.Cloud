@@ -21,7 +21,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="FreeSql" Version="3.2.665" />
+		<PackageReference Include="FreeSql.DbContext" Version="3.2.665" />
 		<PackageReference Include="FreeScheduler" Version="1.0.3" />
 		<PackageReference Include="IdleBus" Version="1.5.2" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.1" />

@@ -11,31 +11,21 @@ or
 > Install-Package FreeSql.Cloud
 
 ```c#
-public enum DbEnum { db1, db2, db3 }
+public enum DbEnum { db1, db2 }
 
-var fsql = new FreeSqlCloud<DbEnum>("myapp"); //提示：泛型可以传入 string
+var fsql = new FreeSqlCloud<DbEnum>();
 fsql.DistributeTrace = log => Console.WriteLine(log.Split('\n')[0].Trim());
 
-fsql.Register(DbEnum.db1, () => new FreeSqlBuilder()
-    .UseConnectionString(DataType.Sqlite, @"Data Source=db1.db")
-    .Build());
-
-fsql.Register(DbEnum.db2, () => new FreeSqlBuilder()
-    .UseConnectionString(DataType.Sqlite, @"Data Source=db2.db")
-    .Build());
-
-fsql.Register(DbEnum.db3, () => new FreeSqlBuilder()
-    .UseConnectionString(DataType.Sqlite, @"Data Source=db3.db")
-    .Build());
+fsql.Register(DbEnum.db1, () => new FreeSqlBuilder().UseConnectionString(DataType.Sqlite, @"Data Source=db1.db").Build());
+fsql.Register(DbEnum.db2, () => new FreeSqlBuilder().UseConnectionString(DataType.Sqlite, @"Data Source=db2.db").Build());
 
 services.AddSingleton<IFreeSql>(fsql);
 services.AddSingleton(fsql);
-//注入两个类型，稳
 ```
 
 > FreeSqlCloud 必须定义成单例模式
 
-> new FreeSqlCloud\<DbEnum\>() 多连接管理
+> new FreeSqlCloud\<DbEnum\>() 多连接管理，DbEnum 换成 string 就是多租户管理
 
 > new FreeSqlCloud\<DbEnum\>("myapp") 开启 TCC/SAGA 事务生效
 
@@ -52,48 +42,53 @@ fsql.Delete<T>();
 //...
 ```
 
-切换数据库：
+切换数据库（多线程安全）：
 
 ```c#
-fsql.Change(DbEnum.db3).Select<T>();
-//同一线程，或异步await 后续 fsql.Select/Insert/Update/Delete 操作是 db3
+fsql.Change(DbEnum.db2).Select<T>();
+//同一线程，或异步await 后续 fsql.Select/Insert/Update/Delete 操作是 db2
 
-fsql.Use(DbEnum.db3).Select<T>();
+fsql.Use(DbEnum.db2).Select<T>();
 //单次有效
 ```
+
 自动定向数据库配置：
 
 ```c#
-//对 fsql.CRUD 方法名 + 实体类型 进行拦截，自动定向到对应的数据库，达到自动切换数据库目的
 fsql.EntitySteering = (_, e) =>
 {
-    switch (e.MethodName)
-    {
-        case "Select":
-            if (e.EntityType == typeof(T))
-            {
-                //查询 T 自动定向 db3
-                e.DBKey = DbEnum.db3;
-            }
-            else if (e.DBKey == DbEnum.db1)
-            {
-                //此处像不像读写分离？
-                var dbkeyIndex = new Random().Next(0, e.AvailableDBKeys.Length);
-                e.DBKey = e.AvailableDBKeys[dbkeyIndex]; //重新定向到其他 db
-            }
-            break;
-        case "Insert":
-        case "Update":
-        case "Delete":
-        case "InsertOrUpdate":
-            break;
-    }
+    if (e.EntityType == typeof(User)) e.DBKey = DbEnum.db2;
+    //查询 User 自动定向 db2
 };
 ```
 
+## 关于仓储对象 Repository
+
+1、静态仓储对象
+
+FreeSql.Repository/UnitOfWorkManager 默认的实现，在初始化就固定了 IFreeSql，因此无法跟随 FreeSqlCloud 切换数据库。
+
+租户分库场景 Repository/UnitOfWorkManager 创建之前，先调用 fsql.Change 切换好数据库。
+
+[《FreeSql.Cloud 如何使用 UnitOfWorkManager 实现 AOP 事务？》](https://github.com/dotnetcore/FreeSql/wiki/DI-UnitOfWorkManager#freesqlcloud-%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8-unitofworkmanager)
+
+2、动态创建对象（不推荐）
+
+但是。。。仍然有一种特殊需求，Repository 在创建之后，仍然能跟随 fsql.Change 切换数据库。
+
+```c#
+var repo = DB.Cloud.GetCloudRepository<User>();
+DB.Cloud.Change(DbEnum.db2);
+Console.WriteLine(repo.Orm.Ado.ConnectionString); //repo -> db2
+DB.Cloud.Change(DbEnum.db1);
+Console.WriteLine(repo.Orm.Ado.ConnectionString); //repo -> db1
+```
+
+这种机制太不可控，所以只做了简单的扩展方法创建，并不推荐 Ioc 注入。
+
 ## 关于并发
 
-FreeSqlCloud 内部使用 IdleBus + AsyncLocal\<string\> 方式实现，多线程并发是安全的。
+FreeSqlCloud 内部使用 IdleBus + AsyncLocal\<string\> 方式实现，Change/Use 多线程并发是安全的。
 
 FreeSqlCloud 实现了接口 IFreeSql，但它不负责直接交互数据库，只是个代理层。
 
@@ -112,7 +107,7 @@ public class FreeSqlCloud<TDBKey> : IFreeSql
 }
 ```
 
-AsyncLocal 负责存储执行上下文 DBKey 值，在异步或同步并发场景是安全的，fsql.Change(DbEnum.db3) 会改变该值。fsql.Change/Use 方法返回 IFreeSql 特殊实现，大大降低 IdleBus 因误用被释放的异常（原因：IdleBus.Get 返回值不允许被外部变量长期引用，应每次 Get 获取对象）
+AsyncLocal 负责存储执行上下文 DBKey 值，在异步或同步并发场景是安全的，fsql.Change(DbEnum.db2) 会改变该值。fsql.Change/Use 方法返回 IFreeSql 特殊实现，大大降低 IdleBus 因误用被释放的异常（原因：IdleBus.Get 返回值不允许被外部变量长期引用，应每次 Get 获取对象）
 
 ## 关于分布式事务
 
@@ -142,7 +137,7 @@ await fsql.StartTcc(orderId.ToString(), "支付购买",
     })
     .Then<Tcc1>(DbEnum.db1, new BuyUnitState { UserId = 1, Point = 10, GoodsId = 1, OrderId = orderId })
     .Then<Tcc2>(DbEnum.db2, new BuyUnitState { UserId = 1, Point = 10, GoodsId = 1, OrderId = orderId })
-    .Then<Tcc3>(DbEnum.db3, new BuyUnitState { UserId = 1, Point = 10, GoodsId = 1, OrderId = orderId })
+    .Then<Tcc3>(DbEnum.db2, new BuyUnitState { UserId = 1, Point = 10, GoodsId = 1, OrderId = orderId })
     .ExecuteAsync();
 ```
 
