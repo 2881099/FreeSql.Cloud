@@ -66,7 +66,9 @@ fsql.EntitySteering = (_, e) =>
 
 1、静态仓储对象
 
-FreeSql.Repository/UnitOfWorkManager 默认的实现，在初始化就固定了 IFreeSql，因此无法跟随 FreeSqlCloud 切换数据库。
+FreeSql.Repository/UnitOfWorkManager 对象创建时固定了 IFreeSql，因此无法跟随 FreeSqlCloud 切换数据库。
+
+> 注意：是同一个对象实例创建之后，无法跟随切换，创建新对象实例不受影响。
 
 租户分库场景 Repository/UnitOfWorkManager 创建之前，先调用 fsql.Change 切换好数据库。
 
