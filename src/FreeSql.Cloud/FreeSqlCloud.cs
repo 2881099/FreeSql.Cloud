@@ -15,8 +15,8 @@ namespace FreeSql
     public partial class FreeSqlCloud<TDBKey> : FreeSqlCloudBase, IFreeSql
     {
         internal override string GetDBKey() => _dbkey.ToInvariantCultureToString();
-        internal override IFreeSql UseDBKey(string dbkey) => Use((TDBKey)typeof(TDBKey).FromObject(dbkey));
-        internal override IFreeSql ChangeDBKey(string dbkey) => Change((TDBKey)typeof(TDBKey).FromObject(dbkey));
+        public override IFreeSql Use(DBKeyString dbkey) => Use((TDBKey)typeof(TDBKey).FromObject(dbkey?.ToString()));
+        public override IFreeSql Change(DBKeyString dbkey) => Change((TDBKey)typeof(TDBKey).FromObject(dbkey?.ToString()));
 
         public string DistributeKey { get; }
         public Action<string> DistributeTrace;

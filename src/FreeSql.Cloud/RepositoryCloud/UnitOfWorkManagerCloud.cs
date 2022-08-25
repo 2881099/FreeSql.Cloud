@@ -43,7 +43,7 @@ namespace FreeSql
         public UnitOfWorkManager GetUnitOfWorkManager(string dbkey)
         {
             if (_uowManagers.TryGetValue(dbkey, out var uowm) == false)
-                _uowManagers.Add(dbkey, uowm = new UnitOfWorkManager(Cloud.UseDBKey(dbkey)));
+                _uowManagers.Add(dbkey, uowm = new UnitOfWorkManager(Cloud.Use(dbkey)));
             return uowm;
         }
     }

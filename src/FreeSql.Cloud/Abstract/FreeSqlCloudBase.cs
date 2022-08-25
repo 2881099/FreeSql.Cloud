@@ -7,7 +7,16 @@ namespace FreeSql.Cloud.Abstract
     public abstract class FreeSqlCloudBase
     {
         internal abstract string GetDBKey();
-        internal abstract IFreeSql UseDBKey(string dbkey);
-        internal abstract IFreeSql ChangeDBKey(string dbkey);
+        public abstract IFreeSql Use(DBKeyString dbkey);
+        public abstract IFreeSql Change(DBKeyString dbkey);
+    }
+
+    public class DBKeyString
+    {
+        string _dbkey;
+        public override string ToString() => _dbkey;
+
+        public static implicit operator DBKeyString(string dbkey) => string.IsNullOrWhiteSpace(dbkey) ? null : new DBKeyString { _dbkey = dbkey };
+        public static implicit operator string(DBKeyString dbkey) => dbkey?.ToString();
     }
 }

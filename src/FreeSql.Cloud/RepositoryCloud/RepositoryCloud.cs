@@ -66,7 +66,7 @@ namespace FreeSql
                 var dbkey = _uowManager != null ? _uowManager.GetDBKey() : _cloud.GetDBKey();
                 if (_repos.TryGetValue(dbkey, out var repo) == false)
                 {
-                    _repos.Add(dbkey, repo = CreateRepository(_cloud.UseDBKey(dbkey)));
+                    _repos.Add(dbkey, repo = CreateRepository(_cloud.Use(dbkey)));
                     if (_uowManager != null) _uowManager.GetUnitOfWorkManager(dbkey).Binding(repo);
                     if (_firstRepository == null) _firstRepository = repo;
                     else

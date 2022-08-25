@@ -5,13 +5,19 @@ namespace net60_webapi
 {
     public enum DbEnum { db1, db2, db3 }
 
+    public class FreeSqlCloud : FreeSqlCloud<DbEnum>
+    {
+        public FreeSqlCloud() : base(null) { }
+        public FreeSqlCloud(string distributeKey) : base(distributeKey) { }
+    }
+
     public static class DB
     {
-        public static FreeSqlCloud<DbEnum> Cloud => cloudLazy.Value;
+        public static FreeSqlCloud Cloud => cloudLazy.Value;
 
-        readonly static Lazy<FreeSqlCloud<DbEnum>> cloudLazy = new Lazy<FreeSqlCloud<DbEnum>>(() =>
+        readonly static Lazy<FreeSqlCloud> cloudLazy = new Lazy<FreeSqlCloud>(() =>
         {
-            var fsql = new FreeSqlCloud<DbEnum>("app001");
+            var fsql = new FreeSqlCloud("app001");
             fsql.DistributeTrace += log => Console.WriteLine(log.Split('\n')[0].Trim());
 
             fsql.Register(DbEnum.db1, () => new FreeSqlBuilder()

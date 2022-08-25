@@ -96,11 +96,11 @@ class UserRepository : RepositoryCloud<User>, IBaseRepository<User>
 
 class UnitOfWorkManagerCloud
 {
-    readonly Dictionary<DbEnum, UnitOfWorkManager> m_managers = new Dictionary<DbEnum, UnitOfWorkManager>();
-    readonly FreeSqlCloud<DbEnum> m_cloud;
+    readonly Dictionary<string, UnitOfWorkManager> m_managers = new Dictionary<string, UnitOfWorkManager>();
+    readonly FreeSqlCloud m_cloud;
     public UnitOfWorkManagerCloud(IServiceProvider serviceProvider)
     {
-        m_cloud = serviceProvider.GetService<FreeSqlCloud<DbEnum>>();
+        m_cloud = serviceProvider.GetService<FreeSqlCloud>();
     }
 
     public void Dispose()
@@ -111,11 +111,11 @@ class UnitOfWorkManagerCloud
         }
         m_managers.Clear();
     }
-    public IUnitOfWork Begin(DbEnum db, Propagation propagation = Propagation.Required, IsolationLevel? isolationLevel = null)
+    public IUnitOfWork Begin(string db, Propagation propagation = Propagation.Required, IsolationLevel? isolationLevel = null)
     {
         return GetUnitOfWorkManager(db).Begin(propagation, isolationLevel);
     }
-    public UnitOfWorkManager GetUnitOfWorkManager(DbEnum db)
+    public UnitOfWorkManager GetUnitOfWorkManager(string db)
     {
         if (m_managers.TryGetValue(db, out var uowm) == false)
         {
@@ -129,7 +129,7 @@ class UnitOfWorkManagerCloud
 class RepositoryCloud<T> : DefaultRepository<T, int> where T : class
 {
     public RepositoryCloud(UnitOfWorkManagerCloud uomw) : this(DbEnum.db1, uomw) { } //DI
-    public RepositoryCloud(DbEnum db, UnitOfWorkManagerCloud uomw) : this(uomw.GetUnitOfWorkManager(db)) { }
+    public RepositoryCloud(DbEnum db, UnitOfWorkManagerCloud uomw) : this(uomw.GetUnitOfWorkManager(db.ToString())) { }
     RepositoryCloud(UnitOfWorkManager uomw) : base(uomw.Orm, uomw)
     {
         uomw.Binding(this);
@@ -138,7 +138,7 @@ class RepositoryCloud<T> : DefaultRepository<T, int> where T : class
 class RepositoryCloud<T, TKey> : DefaultRepository<T, TKey> where T : class
 {
     public RepositoryCloud(UnitOfWorkManagerCloud uomw) : this(DbEnum.db1, uomw) { } //DI
-    public RepositoryCloud(DbEnum db, UnitOfWorkManagerCloud uomw) : this(uomw.GetUnitOfWorkManager(db)) { }
+    public RepositoryCloud(DbEnum db, UnitOfWorkManagerCloud uomw) : this(uomw.GetUnitOfWorkManager(db.ToString())) { }
     RepositoryCloud(UnitOfWorkManager uomw) : base(uomw.Orm, uomw)
     {
         uomw.Binding(this);
@@ -165,7 +165,7 @@ public class TransactionalAttribute : Rougamo.MoAttribute
     public override void OnEntry(MethodContext context)
     {
         var uowManager = m_ServiceProvider.Value.GetService<UnitOfWorkManagerCloud>();
-        _uow = uowManager.Begin(m_db, this.Propagation, this.m_IsolationLevel);
+        _uow = uowManager.Begin(m_db.ToString(), this.Propagation, this.m_IsolationLevel);
     }
     public override void OnExit(MethodContext context)
     {
