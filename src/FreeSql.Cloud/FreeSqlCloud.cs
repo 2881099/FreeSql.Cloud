@@ -70,7 +70,7 @@ namespace FreeSql
         }
 
         public FreeSqlCloud() : this(null) { }
-        public FreeSqlCloud(string distributeKey = "master")
+        public FreeSqlCloud(string distributeKey)
         {
             DistributeKey = distributeKey?.Trim();
             if (string.IsNullOrWhiteSpace(DistributeKey)) DistributeKey = null;

@@ -12,8 +12,13 @@ or
 
 ```c#
 public enum DbEnum { db1, db2 }
+public class FreeSqlCloud : FreeSqlCloud<DbEnum>
+{
+    public FreeSqlCloud() : base(null) { }
+    public FreeSqlCloud(string distributeKey) : base(distributeKey) { }
+}
 
-var fsql = new FreeSqlCloud<DbEnum>();
+var fsql = new FreeSqlCloud();
 fsql.DistributeTrace = log => Console.WriteLine(log.Split('\n')[0].Trim());
 
 fsql.Register(DbEnum.db1, () => new FreeSqlBuilder().UseConnectionString(DataType.Sqlite, @"Data Source=db1.db").Build());
@@ -25,9 +30,9 @@ services.AddSingleton(fsql);
 
 > FreeSqlCloud 必须定义成单例模式
 
-> new FreeSqlCloud\<DbEnum\>() 多连接管理，DbEnum 换成 string 就是多租户管理
+> new FreeSqlCloud() 多连接管理，DbEnum 换成 string 就是多租户管理
 
-> new FreeSqlCloud\<DbEnum\>("myapp") 开启 TCC/SAGA 事务生效
+> new FreeSqlCloud("myapp") 开启 TCC/SAGA 事务生效
 
 ## 如何使用？
 
@@ -169,8 +174,8 @@ SAGA 事务特点：
 FreeSqlCloud 使用唯一标识区分，解决冲突问题，举例：
 
 ```c#
-var fsql = new FreeSqlCloud<DbEnum>("myapp");
-var fsql2 = new FreeSqlCloud<DbEnum>("myapp2");
+var fsql = new FreeSqlCloud("myapp");
+var fsql2 = new FreeSqlCloud("myapp2");
 ```
 
 fsql2 访问不到 fsql 产生的分布式事务，如果 webapi 部署多实例，只需要设置实例各自对应的 name 区分即可。
