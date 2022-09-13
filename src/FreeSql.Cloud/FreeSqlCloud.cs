@@ -114,7 +114,10 @@ namespace FreeSql
                 if (!string.IsNullOrWhiteSpace(DistributeKey))
                 {
                     var orm = _ib.Get(dbkey);
-                    orm.CodeFirst.ConfigEntity<UnitInvokedInfo>(a => a.Name($"unit_invoked_{DistributeKey}"));
+                    orm.Aop.ConfigEntity += (_, e) =>
+                    {
+                        if (e.EntityType == typeof(UnitInvokedInfo)) e.ModifyResult.Name = $"unit_invoked_{DistributeKey}";
+                    };
                     orm.CodeFirst.SyncStructure<UnitInvokedInfo>(); //StartTcc(tid).Then<TccUnit1>(DbEnum.db2, null) 幂等判断表
 
                     //orm.CodeFirst.ConfigEntity<SagaUnitInvokeInfo>(a => a.Name($"saga_{DistributeKey}_unit_invoke"));
@@ -128,14 +131,16 @@ namespace FreeSql
                         if (_distributeTraceEnable) _distributedTraceCall($"{dbkey} 注册成功, 并存储 TCC/SAGA 事务相关数据");
                         _scheduler = new FreeScheduler.Scheduler(new FreeScheduler.TaskHandlers.TestHandler());
 
-                        _ormMaster.CodeFirst.ConfigEntity<TccMasterInfo>(a => a.Name($"tcc_{DistributeKey}"));
+                        _ormMaster.Aop.ConfigEntity += (_, e) =>
+                        {
+                            if (e.EntityType == typeof(TccMasterInfo)) e.ModifyResult.Name = $"tcc_{DistributeKey}";
+                            if (e.EntityType == typeof(TccUnitInfo)) e.ModifyResult.Name = $"tcc_{DistributeKey}_unit";
+                            if (e.EntityType == typeof(SagaMasterInfo)) e.ModifyResult.Name = $"saga_{DistributeKey}";
+                            if (e.EntityType == typeof(SagaUnitInfo)) e.ModifyResult.Name = $"saga_{DistributeKey}_unit";
+                        };
                         _ormMaster.CodeFirst.SyncStructure<TccMasterInfo>();
-                        _ormMaster.CodeFirst.ConfigEntity<TccUnitInfo>(a => a.Name($"tcc_{DistributeKey}_unit"));
                         _ormMaster.CodeFirst.SyncStructure<TccUnitInfo>();
-
-                        _ormMaster.CodeFirst.ConfigEntity<SagaMasterInfo>(a => a.Name($"saga_{DistributeKey}"));
                         _ormMaster.CodeFirst.SyncStructure<SagaMasterInfo>();
-                        _ormMaster.CodeFirst.ConfigEntity<SagaUnitInfo>(a => a.Name($"saga_{DistributeKey}_unit"));
                         _ormMaster.CodeFirst.SyncStructure<SagaUnitInfo>();
 
                         #region 加载历史未未成 TCC 事务
