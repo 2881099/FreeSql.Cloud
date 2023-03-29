@@ -109,9 +109,10 @@ namespace FreeSql
 
         public bool RemoveRegister(TDBKey dbkey) => _ib.TryRemove(dbkey, false);
         public bool ExistsRegister(TDBKey dbkey) => _ib.Exists(dbkey);
-        public FreeSqlCloud<TDBKey> Register(TDBKey dbkey, Func<IFreeSql> create)
+        public FreeSqlCloud<TDBKey> Register(TDBKey dbkey, Func<IFreeSql> create, TimeSpan? idle = null)
         {
-            if (_ib.TryRegister(dbkey, create))
+            if (idle == null || idle <= TimeSpan.Zero) idle = TimeSpan.FromMinutes(3);
+            if (_ib.TryRegister(dbkey, create, idle.Value))
             {
                 if (!string.IsNullOrWhiteSpace(DistributeKey))
                 {
