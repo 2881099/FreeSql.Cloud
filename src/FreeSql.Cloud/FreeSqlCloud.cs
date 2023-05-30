@@ -198,7 +198,7 @@ namespace FreeSql
         public GlobalFilter GlobalFilter => _ormCurrent.GlobalFilter;
         public void Dispose()
         {
-            if (_distributeTraceEnable) _distributedTraceCall($"准备释放, 当前未完成事务 {_scheduler.QuantityTempTask} 个");
+            if (_distributeTraceEnable && _scheduler != null) _distributedTraceCall($"准备释放, 当前未完成事务 {_scheduler.QuantityTempTask} 个");
             _scheduler?.Dispose();
             _ib.Dispose();
             if (_distributeTraceEnable) _distributedTraceCall($"成功释放");
