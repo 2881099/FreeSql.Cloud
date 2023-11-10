@@ -13,11 +13,13 @@ namespace FreeSql
     {
         readonly FreeSqlCloud<TDBKey> _fsqlc;
         readonly TDBKey _current;
+        readonly TDBKey _old;
 
-        public FreeSqlCloundSnapshot(FreeSqlCloud<TDBKey> fsqlc, TDBKey current)
+        public FreeSqlCloundSnapshot(FreeSqlCloud<TDBKey> fsqlc, TDBKey current, TDBKey old)
         {
             _fsqlc = fsqlc;
             _current = current;
+            _old = old;
         }
 
         public IAdo Ado => _fsqlc.GetBySnapshot(_current).Ado;
@@ -25,7 +27,15 @@ namespace FreeSql
         public ICodeFirst CodeFirst => _fsqlc.GetBySnapshot(_current).CodeFirst;
         public IDbFirst DbFirst => _fsqlc.GetBySnapshot(_current).DbFirst;
         public GlobalFilter GlobalFilter => _fsqlc.GetBySnapshot(_current).GlobalFilter;
-        public void Dispose() { }
+        public void Dispose()
+        {
+            //示例
+            //using (_fsqlc.Change("db2"))
+            //{
+
+            //}
+            _fsqlc.Change(_old);
+        }
 
         public void Transaction(Action handler) => _fsqlc.GetBySnapshot(_current).Transaction(handler);
         public void Transaction(IsolationLevel isolationLevel, Action handler) => _fsqlc.GetBySnapshot(_current).Transaction(isolationLevel, handler);

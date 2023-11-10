@@ -55,6 +55,11 @@ fsql.Change(DbEnum.db2).Select<T>();
 
 fsql.Use(DbEnum.db2).Select<T>();
 //单次有效
+
+using (fsql.Change(DbEnum.db2)) {
+    //todo..
+}
+//FreeSql.Cloud v1.6.7 一个范围内切换，之后再切换回去
 ```
 
 自动定向数据库配置：

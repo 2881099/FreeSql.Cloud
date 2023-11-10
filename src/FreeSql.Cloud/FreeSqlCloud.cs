@@ -89,7 +89,7 @@ namespace FreeSql
             var oldkey = _dbkeyCurrent.Value;
             if (_distributeTraceEnable && object.Equals(dbkey, oldkey) == false) _distributedTraceCall($"数据库切换[Change] {oldkey} -> {dbkey}");
             _dbkeyCurrent.Value = dbkey;
-            return new FreeSqlCloundSnapshot<TDBKey>(this, dbkey);
+            return new FreeSqlCloundSnapshot<TDBKey>(this, dbkey, oldkey);
         }
         /// <summary>
         /// 临时使用数据库（单次有效）
@@ -100,7 +100,7 @@ namespace FreeSql
         {
             var oldkey = _dbkeyCurrent.Value;
             if (_distributeTraceEnable && object.Equals(dbkey, oldkey) == false) _distributedTraceCall($"数据库使用[Use] {dbkey}");
-            return new FreeSqlCloundSnapshot<TDBKey>(this, dbkey);
+            return new FreeSqlCloundSnapshot<TDBKey>(this, dbkey, default);
         }
         internal IFreeSql GetBySnapshot(TDBKey dbkey)
         {
