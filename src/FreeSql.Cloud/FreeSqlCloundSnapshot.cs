@@ -13,13 +13,13 @@ namespace FreeSql
     {
         readonly FreeSqlCloud<TDBKey> _fsqlc;
         readonly TDBKey _current;
-        readonly TDBKey _old;
+        readonly Action _dispose;
 
-        public FreeSqlCloundSnapshot(FreeSqlCloud<TDBKey> fsqlc, TDBKey current, TDBKey old)
+        public FreeSqlCloundSnapshot(FreeSqlCloud<TDBKey> fsqlc, TDBKey current, Action dispose)
         {
             _fsqlc = fsqlc;
             _current = current;
-            _old = old;
+            _dispose = dispose;
         }
 
         public IAdo Ado => _fsqlc.GetBySnapshot(_current).Ado;
@@ -34,7 +34,7 @@ namespace FreeSql
             //{
 
             //}
-            _fsqlc.Change(_old);
+            _dispose?.Invoke();
         }
 
         public void Transaction(Action handler) => _fsqlc.GetBySnapshot(_current).Transaction(handler);
