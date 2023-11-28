@@ -25,11 +25,7 @@ namespace FreeSql
             foreach (var uowm in _uowManagers.Values) action(uowm);
         }
 
-#if net40
-        internal ThreadLocal<string> _dbkeyCurrent = new ThreadLocal<string>();
-#else
-        internal AsyncLocal<string> _dbkeyCurrent = new AsyncLocal<string>();
-#endif
+		internal AsyncLocalAccessor<string> _dbkeyCurrent = new AsyncLocalAccessor<string>();
         internal string GetDBKey()
         {
             if (string.IsNullOrWhiteSpace(_dbkeyCurrent.Value) || GetUnitOfWorkManager(_dbkeyCurrent.Value).Current == null) return Cloud.GetDBKey();

@@ -1,7 +1,9 @@
 using FreeSql;
+using FreeSql.Internal;
 using net60_webapi;
 using Rougamo.Context;
 using System.Data;
+using static System.Net.Mime.MediaTypeNames;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,7 +46,43 @@ app.MapGet("/", async context =>
     await context.Response.WriteAsync("hello word");
 });
 
+test();
 app.Run();
+
+void test()
+{
+	var fsql = new FreeSqlCloud2();
+	fsql.Register(DbEnum2.ojDb3D, () =>
+		new FreeSqlBuilder()
+			.UseConnectionFactory(DataType.PostgreSQL, () => null)
+			.UseNameConvert(NameConvertType.ToLower).Build());
+	fsql.Register(DbEnum2.ChDb, () =>
+		new FreeSqlBuilder()
+			.UseConnectionFactory(DataType.Oracle, () => null)
+			.UseNameConvert(NameConvertType.ToUpper).Build());
+
+	Console.WriteLine(fsql.Ado.DataType);
+	using (fsql.Change(DbEnum2.ChDb))
+	{
+		Console.WriteLine(fsql.Ado.DataType);
+		using (fsql.Change(DbEnum2.ojDb3D))
+		{
+			Console.WriteLine(fsql.Ado.DataType);
+		}
+		Console.WriteLine(fsql.Ado.DataType);
+	}
+	Console.WriteLine(fsql.Ado.DataType);
+}
+public class FreeSqlCloud2 : FreeSqlCloud<DbEnum2>
+{
+	public FreeSqlCloud2() : base(null) { }
+	public FreeSqlCloud2(string distributekey) : base(distributekey) { }
+}
+public enum DbEnum2
+{
+	ChDb = 0,
+	ojDb3D = 1
+}
 
 class UserService
 {

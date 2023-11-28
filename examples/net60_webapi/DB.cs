@@ -35,7 +35,14 @@ namespace net60_webapi
                 .UseAutoSyncStructure(true)
                 .Build());
 
-            fsql.EntitySteering = (_, e) =>
+            Console.WriteLine(fsql.Ado.ConnectionString);
+            using (fsql.Change(DbEnum.db3))
+            {
+				Console.WriteLine(fsql.Ado.ConnectionString);
+			}
+			Console.WriteLine(fsql.Ado.ConnectionString);
+
+			fsql.EntitySteering = (_, e) =>
             {
                 if (e.EntityType == typeof(User)) e.DBKey = DbEnum.db1;
                 else if (e.EntityType == typeof(Goods)) e.DBKey = DbEnum.db2;

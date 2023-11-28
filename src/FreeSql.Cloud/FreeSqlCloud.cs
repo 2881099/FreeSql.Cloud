@@ -53,12 +53,9 @@ namespace FreeSql
         #endregion
 
         internal TDBKey _dbkeyMaster;
-#if net40
-        internal ThreadLocal<TDBKey> _dbkeyCurrent = new ThreadLocal<TDBKey>();
-#else
-        internal AsyncLocal<TDBKey> _dbkeyCurrent = new AsyncLocal<TDBKey>();
-#endif
-        internal TDBKey _dbkey => object.Equals(_dbkeyCurrent.Value, default(TDBKey)) ? _dbkeyMaster : _dbkeyCurrent.Value;
+
+        internal AsyncLocalAccessor<TDBKey> _dbkeyCurrent = new AsyncLocalAccessor<TDBKey>();
+        internal TDBKey _dbkey => _dbkeyCurrent.Value;
         internal IFreeSql _ormMaster => _ib.Get(_dbkeyMaster);
         internal IFreeSql _ormCurrent => _ib.Get(_dbkey);
         internal IdleBus<TDBKey, IFreeSql> _ib;
@@ -129,7 +126,8 @@ namespace FreeSql
                 if (_ib.GetKeys().Length == 1)
                 {
                     _dbkeyMaster = dbkey;
-                    if (!string.IsNullOrWhiteSpace(DistributeKey))
+                    _dbkeyCurrent.Value = dbkey;
+					if (!string.IsNullOrWhiteSpace(DistributeKey))
                     {
                         if (_distributeTraceEnable) _distributedTraceCall($"{dbkey} 注册成功, 并存储 TCC/SAGA 事务相关数据");
                         _scheduler = new FreeScheduler.Scheduler(new FreeScheduler.TaskHandlers.TestHandler());
