@@ -13,7 +13,8 @@ namespace FreeSql
         public UnitOfWorkManagerCloud(FreeSqlCloudBase cloud)
         {
             Cloud = cloud;
-        }
+            _dbkeyCurrent = new AsyncLocalAccessor<string>(Cloud.GetDBKey);
+		}
 
         public void Dispose()
         {
@@ -25,7 +26,7 @@ namespace FreeSql
             foreach (var uowm in _uowManagers.Values) action(uowm);
         }
 
-		internal AsyncLocalAccessor<string> _dbkeyCurrent = new AsyncLocalAccessor<string>();
+        internal AsyncLocalAccessor<string> _dbkeyCurrent;
         internal string GetDBKey()
         {
             if (string.IsNullOrWhiteSpace(_dbkeyCurrent.Value) || GetUnitOfWorkManager(_dbkeyCurrent.Value).Current == null) return Cloud.GetDBKey();

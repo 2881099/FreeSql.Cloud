@@ -54,7 +54,7 @@ namespace FreeSql
 
         internal TDBKey _dbkeyMaster;
 
-        internal AsyncLocalAccessor<TDBKey> _dbkeyCurrent = new AsyncLocalAccessor<TDBKey>();
+        internal AsyncLocalAccessor<TDBKey> _dbkeyCurrent;
         internal TDBKey _dbkey => _dbkeyCurrent.Value;
         internal IFreeSql _ormMaster => _ib.Get(_dbkeyMaster);
         internal IFreeSql _ormCurrent => _ib.Get(_dbkey);
@@ -73,7 +73,8 @@ namespace FreeSql
             if (string.IsNullOrWhiteSpace(DistributeKey)) DistributeKey = null;
             _ib = new IdleBus<TDBKey, IFreeSql>(TimeSpan.FromMinutes(3));
             _ib.Notice += (_, __) => { };
-        }
+            _dbkeyCurrent = new AsyncLocalAccessor<TDBKey>(() => _dbkeyMaster);
+		}
 
         /// <summary>
         /// 切换数据库（同一线程，或异步await 后续操作有效）<para></para>

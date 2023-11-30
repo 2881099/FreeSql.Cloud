@@ -20,7 +20,7 @@ namespace net60_webapi
             var fsql = new FreeSqlCloud("app001");
             fsql.DistributeTrace += log => Console.WriteLine(log.Split('\n')[0].Trim());
 
-            fsql.Register(DbEnum.db1, () => new FreeSqlBuilder()
+            fsql.Register(DbEnum.db3, () => new FreeSqlBuilder()
                 .UseConnectionString(DataType.Sqlite, @"Data Source=:memory:;max pool size=1")
                 .UseAutoSyncStructure(true)
                 .Build());
@@ -30,13 +30,13 @@ namespace net60_webapi
                 .UseAutoSyncStructure(true)
                 .Build());
 
-            fsql.Register(DbEnum.db3, () => new FreeSqlBuilder()
+            fsql.Register(DbEnum.db1, () => new FreeSqlBuilder()
                 .UseConnectionString(DataType.Sqlite, @"Data Source=:memory:;max pool size=3")
                 .UseAutoSyncStructure(true)
                 .Build());
 
             Console.WriteLine(fsql.Ado.ConnectionString);
-            using (fsql.Change(DbEnum.db3))
+            using (fsql.Change(DbEnum.db2))
             {
 				Console.WriteLine(fsql.Ado.ConnectionString);
 			}

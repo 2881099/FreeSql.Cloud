@@ -23,13 +23,19 @@ namespace FreeSql.Cloud.Abstract
 
     public class AsyncLocalAccessor<T>
     {
-        public AsyncLocalAccessor()
+		Func<T> _defaultValue;
+        public AsyncLocalAccessor(Func<T> defaultValue)
         {
-            Value = default;
+            _defaultValue = defaultValue;
 		}
 		public T Value
         {
-            get => _asyncLocal.Value != null ? _asyncLocal.Value.Value : default;
+            get
+            {
+                if (_asyncLocal.Value != null) return _asyncLocal.Value.Value;
+                if (_defaultValue != null) return _defaultValue();
+                return default;
+            }
             set
             {
                 if (_asyncLocal.Value == null) _asyncLocal.Value = new ValueHolder();
