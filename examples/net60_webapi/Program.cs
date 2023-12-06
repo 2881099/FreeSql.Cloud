@@ -1,4 +1,5 @@
 using FreeSql;
+using FreeSql.Cloud.Abstract;
 using FreeSql.Internal;
 using net60_webapi;
 using Rougamo.Context;
@@ -46,8 +47,13 @@ app.MapGet("/", async context =>
     await context.Response.WriteAsync("hello word");
 });
 
+AsyncLocalAccessor<int> access = new AsyncLocalAccessor<int>(() => 100);
+await access.SetValue();
+Console.WriteLine($"ValueAccessor before await FooAsync in Main: {access.Value}");
+
 test();
 app.Run();
+
 
 void test()
 {
@@ -223,5 +229,14 @@ public class TransactionalAttribute : Rougamo.MoAttribute
                 _uow.Dispose();
             }
         }
+    }
+}
+
+public static class Extension
+{
+    public static async Task SetValue(this AsyncLocalAccessor<int> face)
+    {
+        face.Value = 200;
+        await Task.Delay(100);
     }
 }

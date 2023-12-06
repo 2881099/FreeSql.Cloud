@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<TargetFrameworks>netstandard20;net40</TargetFrameworks>
-		<Version>1.6.10</Version>
+		<Version>1.6.11</Version>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<Authors>FreeSql;ncc;YeXiangQin</Authors>
 		<Description>提供跨数据库访问，分布式事务TCC、SAGA解决方案，支持 .NET Core 2.1+, .NET Framework 4.0+.</Description>
@@ -18,8 +18,13 @@
 		<SignAssembly>true</SignAssembly>
 		<AssemblyOriginatorKeyFile>key.snk</AssemblyOriginatorKeyFile>
 		<DelaySign>false</DelaySign>
+		<PackageReadmeFile>readme.md</PackageReadmeFile>
 	</PropertyGroup>
 
+	<ItemGroup>
+		<None Include="../../readme.md" Pack="true" PackagePath="\"/>
+	</ItemGroup>
+	
 	<ItemGroup>
 		<PackageReference Include="FreeSql.DbContext" Version="3.2.666" />
 		<PackageReference Include="FreeScheduler" Version="1.1.0" />
