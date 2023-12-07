@@ -1,18 +1,16 @@
-﻿using FreeSql.Cloud.Saga;
+﻿using FreeSql.Cloud.Abstract;
+using FreeSql.Cloud.Model;
+using FreeSql.Cloud.Saga;
 using FreeSql.Cloud.Tcc;
 using FreeSql.Internal;
 using System;
 using System.Collections.Generic;
-using System.Collections.Concurrent;
 using System.Data;
-using System.Threading;
-using FreeSql.Cloud.Model;
-using FreeSql.Cloud.Abstract;
 
 namespace FreeSql
 {
-    //public class FreeSqlCloud : FreeSqlCloud<string> { }
-    public partial class FreeSqlCloud<TDBKey> : FreeSqlCloudBase, IFreeSql
+	//public class FreeSqlCloud : FreeSqlCloud<string> { }
+	public partial class FreeSqlCloud<TDBKey> : FreeSqlCloudBase, IFreeSql
     {
         internal override string GetDBKey() => _dbkey.ToInvariantCultureToString();
         public override IFreeSql Use(DBKeyString dbkey) => Use((TDBKey)typeof(TDBKey).FromObject(dbkey?.ToString()));
@@ -55,7 +53,15 @@ namespace FreeSql
         internal TDBKey _dbkeyMaster;
 
         internal AsyncLocalAccessor<TDBKey> _dbkeyCurrent;
-        internal TDBKey _dbkey => _dbkeyCurrent.Value;
+        internal TDBKey _dbkey
+        {
+            get
+            {
+                var val = _dbkeyCurrent.Value;
+                if (typeof(TDBKey) == typeof(string) && val == null) return _dbkeyMaster;
+                return val;
+            }
+        }
         internal IFreeSql _ormMaster => _ib.Get(_dbkeyMaster);
         internal IFreeSql _ormCurrent => _ib.Get(_dbkey);
         internal IdleBus<TDBKey, IFreeSql> _ib;

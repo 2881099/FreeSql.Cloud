@@ -35,7 +35,7 @@ namespace net60_webapi
                 .UseAutoSyncStructure(true)
                 .Build());
 
-            Console.WriteLine(fsql.Ado.ConnectionString);
+           Console.WriteLine(fsql.Ado.ConnectionString);
             using (fsql.Change(DbEnum.db2))
             {
 				Console.WriteLine(fsql.Ado.ConnectionString);

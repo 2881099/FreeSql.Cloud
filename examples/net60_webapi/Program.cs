@@ -58,20 +58,23 @@ app.Run();
 void test()
 {
 	var fsql = new FreeSqlCloud2();
-	fsql.Register(DbEnum2.ojDb3D, () =>
+
+	Console.WriteLine(fsql.Ado.DataType);
+
+	fsql.Register("ojDb3D", () =>
 		new FreeSqlBuilder()
 			.UseConnectionFactory(DataType.PostgreSQL, () => null)
 			.UseNameConvert(NameConvertType.ToLower).Build());
-	fsql.Register(DbEnum2.ChDb, () =>
+	fsql.Register("ChDb", () =>
 		new FreeSqlBuilder()
 			.UseConnectionFactory(DataType.Oracle, () => null)
 			.UseNameConvert(NameConvertType.ToUpper).Build());
 
 	Console.WriteLine(fsql.Ado.DataType);
-	using (fsql.Change(DbEnum2.ChDb))
+	using (fsql.Change("ChDb"))
 	{
 		Console.WriteLine(fsql.Ado.DataType);
-		using (fsql.Change(DbEnum2.ojDb3D))
+		using (fsql.Change("ojDb3D"))
 		{
 			Console.WriteLine(fsql.Ado.DataType);
 		}
@@ -79,7 +82,7 @@ void test()
 	}
 	Console.WriteLine(fsql.Ado.DataType);
 }
-public class FreeSqlCloud2 : FreeSqlCloud<DbEnum2>
+public class FreeSqlCloud2 : FreeSqlCloud<string>
 {
 	public FreeSqlCloud2() : base(null) { }
 	public FreeSqlCloud2(string distributekey) : base(distributekey) { }
