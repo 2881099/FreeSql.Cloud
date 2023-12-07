@@ -90,7 +90,7 @@ namespace FreeSql
         /// <returns></returns>
         public IFreeSql Change(TDBKey dbkey)
         {
-            var oldkey = _dbkeyCurrent.Value;
+            var oldkey = _dbkey;
             if (_distributeTraceEnable && object.Equals(dbkey, oldkey) == false) _distributedTraceCall($"数据库切换[Change] {oldkey} -> {dbkey}");
             _dbkeyCurrent.Value = dbkey;
             return new FreeSqlCloundSnapshot<TDBKey>(this, dbkey, () => _dbkeyCurrent.Value = oldkey);
@@ -102,7 +102,7 @@ namespace FreeSql
         /// <returns></returns>
         public IFreeSql Use(TDBKey dbkey)
         {
-            var oldkey = _dbkeyCurrent.Value;
+            var oldkey = _dbkey;
             if (_distributeTraceEnable && object.Equals(dbkey, oldkey) == false) _distributedTraceCall($"数据库使用[Use] {dbkey}");
             return new FreeSqlCloundSnapshot<TDBKey>(this, dbkey, null);
         }
