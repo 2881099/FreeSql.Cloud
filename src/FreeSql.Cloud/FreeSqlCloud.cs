@@ -137,7 +137,9 @@ namespace FreeSql
 					if (!string.IsNullOrWhiteSpace(DistributeKey))
                     {
                         if (_distributeTraceEnable) _distributedTraceCall($"{dbkey} 注册成功, 并存储 TCC/SAGA 事务相关数据");
-                        _scheduler = new FreeScheduler.Scheduler(new FreeScheduler.TaskHandlers.TestHandler());
+                        _scheduler = new FreeSchedulerBuilder()
+                            .OnExecuting(task => { })
+                            .Build();
 
                         _ormMaster.Aop.ConfigEntity += (_, e) =>
                         {

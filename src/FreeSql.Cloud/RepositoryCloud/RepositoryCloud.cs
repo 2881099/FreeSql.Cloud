@@ -73,7 +73,7 @@ namespace FreeSql
                     {
                         repo.DbContextOptions = _firstRepository.DbContextOptions;
                         if (_asTypeEntityType != null) repo.AsType(_asTypeEntityType);
-                        if (_asTableRule != null) repo.AsTable(_asTableRule);
+                        if (_asTablePriv != null) repo.AsTable(_asTablePriv);
                     }
                 }
                 return repo;
@@ -90,14 +90,22 @@ namespace FreeSql
         {
             _asTypeEntityType = entityType;
             ForEachRepos(repo => repo.AsType(entityType));
-        }
-        Func<string, string> _asTableRule;
-        public void AsTable(Func<string, string> rule)
+		}
+		internal Func<Type, string, string> _asTablePriv;
+		public void AsTable(Func<string, string> rule)
         {
-            _asTableRule = rule;
-            ForEachRepos(repo => repo.AsTable(rule));
+            if (rule == null)
+			    _asTablePriv = null;
+            else
+				_asTablePriv = (a, b) => a == EntityType ? rule(b) : null;
+			ForEachRepos(repo => repo.AsTable(_asTablePriv));
         }
-        public IUnitOfWork UnitOfWork
+		public void AsTable(Func<Type, string, string> rule)
+		{
+			_asTablePriv = rule;
+			ForEachRepos(repo => repo.AsTable(_asTablePriv));
+		}
+		public IUnitOfWork UnitOfWork
         {
             get => CurrentRepository.UnitOfWork;
             set => CurrentRepository.UnitOfWork = value;
