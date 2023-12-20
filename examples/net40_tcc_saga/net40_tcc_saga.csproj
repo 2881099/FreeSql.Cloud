@@ -49,10 +49,10 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="FreeSql">
-      <Version>3.2.806</Version>
+      <Version>3.2.808</Version>
     </PackageReference>
     <PackageReference Include="FreeSql.Provider.Sqlite">
-      <Version>3.2.806</Version>
+      <Version>3.2.808</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>

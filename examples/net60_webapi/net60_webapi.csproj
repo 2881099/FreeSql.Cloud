@@ -7,10 +7,10 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="FreeSql.DbContext" Version="3.2.806" />
-		<PackageReference Include="FreeSql.Provider.Sqlite" Version="3.2.806" />
-		<PackageReference Include="FreeSql.Provider.PostgreSQL" Version="3.2.806" />
-		<PackageReference Include="FreeSql.Provider.Oracle" Version="3.2.806" />
+		<PackageReference Include="FreeSql.DbContext" Version="3.2.808" />
+		<PackageReference Include="FreeSql.Provider.Sqlite" Version="3.2.808" />
+		<PackageReference Include="FreeSql.Provider.PostgreSQL" Version="3.2.808" />
+		<PackageReference Include="FreeSql.Provider.Oracle" Version="3.2.808" />
 		<PackageReference Include="Rougamo.Fody" Version="1.1.2" />
 	</ItemGroup>
 

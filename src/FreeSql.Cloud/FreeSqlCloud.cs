@@ -79,7 +79,11 @@ namespace FreeSql
             if (string.IsNullOrWhiteSpace(DistributeKey)) DistributeKey = null;
             _ib = new IdleBus<TDBKey, IFreeSql>(TimeSpan.FromMinutes(3));
             _ib.Notice += (_, __) => { };
-            _dbkeyCurrent = new AsyncLocalAccessor<TDBKey>(() => _dbkeyMaster);
+            _dbkeyCurrent = new AsyncLocalAccessor<TDBKey>(() =>
+            {
+                if (typeof(TDBKey) == typeof(string) && _dbkeyMaster == null) return (TDBKey)typeof(TDBKey).FromObject("");
+                return _dbkeyMaster;
+            });
 		}
 
         /// <summary>
