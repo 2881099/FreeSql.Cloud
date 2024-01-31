@@ -222,7 +222,9 @@ static class FreesqlCloudInternalExtensions
         }
         if (targetType == typeof(string))
         {
-            return valueIsNull ? null : value.ToInvariantCultureToString();
+            if (valueIsNull) return null;
+            if (valueType == typeof(byte[])) return encoding.GetString(value as byte[]);
+            return value.ToInvariantCultureToString();
         }
         else if (targetType == typeof(byte[])) //guid -> byte[]
         {
