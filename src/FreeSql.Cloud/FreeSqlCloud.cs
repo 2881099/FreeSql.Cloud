@@ -227,7 +227,7 @@ namespace FreeSql
                     MethodName = methodName,
                     EntityType = entityType,
                     AvailableDBKeys = _ib.GetKeys(a => a == null || a.Ado.MasterPool.IsAvailable),
-                    _dbkey = _dbkey
+                    _dbkey = defaultValue
                 };
                 EntitySteering(this, args);
                 if (args._dbkeyChanged) return args.DBKey;
