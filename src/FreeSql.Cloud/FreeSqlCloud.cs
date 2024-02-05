@@ -218,7 +218,7 @@ namespace FreeSql
         public void Transaction(Action handler) => _ormCurrent.Transaction(handler);
         public void Transaction(IsolationLevel isolationLevel, Action handler) => _ormCurrent.Transaction(isolationLevel, handler);
 
-        IFreeSql GetCrudOrm(string methodName, Type entityType)
+        internal TDBKey GetEntitySteeringDBKey(string methodName, Type entityType, TDBKey defaultValue)
         {
             if (EntitySteering != null)
             {
@@ -230,10 +230,11 @@ namespace FreeSql
                     _dbkey = _dbkey
                 };
                 EntitySteering(this, args);
-                if (args._dbkeyChanged) return _ib.Get(args.DBKey);
+                if (args._dbkeyChanged) return args.DBKey;
             }
-            return _ormCurrent;
+            return defaultValue;
         }
+        IFreeSql GetCrudOrm(string methodName, Type entityType) => _ib.Get(GetEntitySteeringDBKey(methodName, entityType, _dbkey));
 
         public ISelect<T1> Select<T1>() where T1 : class
         {
