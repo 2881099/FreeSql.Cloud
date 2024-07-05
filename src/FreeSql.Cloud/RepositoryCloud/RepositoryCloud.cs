@@ -1,4 +1,5 @@
-﻿using FreeSql.Cloud.Abstract;
+﻿using FreeSql;
+using FreeSql.Cloud.Abstract;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,6 +7,22 @@ using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 
+#if !net40
+public static class FreesqlCloudGlobalExtensions
+{
+    /// <summary>
+    /// 创建特殊仓储对象，实现随时跟随 FreeSqlCloud Change 方法切换到对应的数据库<para></para>
+    /// _<para></para>
+    /// 区别说明：其他方式创建的仓储对象，初始化已经固定 IFreeSql（无法跟随切换）
+    /// </summary>
+    /// <typeparam name="TEntity"></typeparam>
+    /// <param name="that"></param>
+    /// <returns></returns>
+    public static IBaseRepository<TEntity> GetCloudRepository<TEntity>(this FreeSqlCloudBase that) where TEntity : class
+    {
+        return new RepositoryCloud<TEntity>(that);
+    }
+}
 namespace FreeSql
 {
     /// <summary>
@@ -141,8 +158,7 @@ namespace FreeSql
         public int Delete(Expression<Func<TEntity, bool>> predicate) => CurrentRepository.Delete(predicate);
         public List<object> DeleteCascadeByDatabase(Expression<Func<TEntity, bool>> predicate) => CurrentRepository.DeleteCascadeByDatabase(predicate);
 
-#if net40
-#else
+
         public Task<TEntity> InsertAsync(TEntity entity, CancellationToken cancellationToken = default) => CurrentRepository.InsertAsync(entity, cancellationToken);
         public Task<List<TEntity>> InsertAsync(IEnumerable<TEntity> entitys, CancellationToken cancellationToken = default) => CurrentRepository.InsertAsync(entitys, cancellationToken);
         public Task<TEntity> InsertOrUpdateAsync(TEntity entity, CancellationToken cancellationToken = default) => CurrentRepository.InsertOrUpdateAsync(entity, cancellationToken);
@@ -155,48 +171,48 @@ namespace FreeSql
         public Task<int> DeleteAsync(IEnumerable<TEntity> entitys, CancellationToken cancellationToken = default) => CurrentRepository.DeleteAsync(entitys, cancellationToken);
         public Task<int> DeleteAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default) => CurrentRepository.DeleteAsync(predicate, cancellationToken);
         public Task<List<object>> DeleteCascadeByDatabaseAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default) => CurrentRepository.DeleteCascadeByDatabaseAsync(predicate, cancellationToken);
-#endif
     }
+    //    class RepositoryCloud<TDBKey, TEntity, TKey> : RepositoryCloud<TDBKey, TEntity>, IBaseRepository<TEntity, TKey>
+    //        where TEntity : class
+    //    {
+    //        /// <summary>
+    //        /// 跟随 cloud.Change 切换
+    //        /// </summary>
+    //        /// <param name="cloud"></param>
+    //        public RepositoryCloud(FreeSqlCloud<TDBKey> cloud) : base(cloud) { }
+    //        /// <summary>
+    //        /// 跟随 uowManager.Begin 工作单元切换（优先）<para></para>
+    //        /// 或者<para></para>
+    //        /// 跟随 cloud.Change 切换
+    //        /// </summary>
+    //        /// <param name="cloud"></param>
+    //        /// <param name="uowManager"></param>
+    //        public RepositoryCloud(FreeSqlCloud<TDBKey> cloud, UnitOfWorkManagerCloud<TDBKey> uowManager) : base(cloud, uowManager) { }
 
-//    class RepositoryCloud<TDBKey, TEntity, TKey> : RepositoryCloud<TDBKey, TEntity>, IBaseRepository<TEntity, TKey>
-//        where TEntity : class
-//    {
-//        /// <summary>
-//        /// 跟随 cloud.Change 切换
-//        /// </summary>
-//        /// <param name="cloud"></param>
-//        public RepositoryCloud(FreeSqlCloud<TDBKey> cloud) : base(cloud) { }
-//        /// <summary>
-//        /// 跟随 uowManager.Begin 工作单元切换（优先）<para></para>
-//        /// 或者<para></para>
-//        /// 跟随 cloud.Change 切换
-//        /// </summary>
-//        /// <param name="cloud"></param>
-//        /// <param name="uowManager"></param>
-//        public RepositoryCloud(FreeSqlCloud<TDBKey> cloud, UnitOfWorkManagerCloud<TDBKey> uowManager) : base(cloud, uowManager) { }
+    //        TEntity CheckTKeyAndReturnIdEntity(TKey id)
+    //        {
+    //            var repo = CurrentRepository;
+    //            var tb = repo.Orm.CodeFirst.GetTableByEntity(repo.EntityType);
+    //            if (tb.Primarys.Length != 1) throw new Exception(DbContextStrings.EntityType_PrimaryKeyIsNotOne(repo.EntityType.Name));
+    //            if (tb.Primarys[0].CsType.NullableTypeOrThis() != typeof(TKey).NullableTypeOrThis()) throw new Exception(DbContextStrings.EntityType_PrimaryKeyError(repo.EntityType.Name, typeof(TKey).FullName));
+    //            var obj = tb.Type.CreateInstanceGetDefaultValue();
+    //            repo.Orm.SetEntityValueWithPropertyName(tb.Type, obj, tb.Primarys[0].CsName, id);
+    //            var ret = obj as TEntity;
+    //            if (ret == null) throw new Exception(DbContextStrings.EntityType_CannotConvert(repo.EntityType.Name, typeof(TEntity).Name));
+    //            return ret;
+    //        }
 
-//        TEntity CheckTKeyAndReturnIdEntity(TKey id)
-//        {
-//            var repo = CurrentRepository;
-//            var tb = repo.Orm.CodeFirst.GetTableByEntity(repo.EntityType);
-//            if (tb.Primarys.Length != 1) throw new Exception(DbContextStrings.EntityType_PrimaryKeyIsNotOne(repo.EntityType.Name));
-//            if (tb.Primarys[0].CsType.NullableTypeOrThis() != typeof(TKey).NullableTypeOrThis()) throw new Exception(DbContextStrings.EntityType_PrimaryKeyError(repo.EntityType.Name, typeof(TKey).FullName));
-//            var obj = tb.Type.CreateInstanceGetDefaultValue();
-//            repo.Orm.SetEntityValueWithPropertyName(tb.Type, obj, tb.Primarys[0].CsName, id);
-//            var ret = obj as TEntity;
-//            if (ret == null) throw new Exception(DbContextStrings.EntityType_CannotConvert(repo.EntityType.Name, typeof(TEntity).Name));
-//            return ret;
-//        }
+    //        public virtual TEntity Get(TKey id) => Select.WhereDynamic(CheckTKeyAndReturnIdEntity(id)).ToOne();
+    //        public virtual TEntity Find(TKey id) => Select.WhereDynamic(CheckTKeyAndReturnIdEntity(id)).ToOne();
+    //        public virtual int Delete(TKey id) => Delete(CheckTKeyAndReturnIdEntity(id));
 
-//        public virtual TEntity Get(TKey id) => Select.WhereDynamic(CheckTKeyAndReturnIdEntity(id)).ToOne();
-//        public virtual TEntity Find(TKey id) => Select.WhereDynamic(CheckTKeyAndReturnIdEntity(id)).ToOne();
-//        public virtual int Delete(TKey id) => Delete(CheckTKeyAndReturnIdEntity(id));
-
-//#if net40
-//#else
-//        public Task<TEntity> GetAsync(TKey id, CancellationToken cancellationToken = default) => Select.WhereDynamic(CheckTKeyAndReturnIdEntity(id)).ToOneAsync(cancellationToken);
-//        public Task<TEntity> FindAsync(TKey id, CancellationToken cancellationToken = default) => Select.WhereDynamic(CheckTKeyAndReturnIdEntity(id)).ToOneAsync(cancellationToken);
-//        public Task<int> DeleteAsync(TKey id, CancellationToken cancellationToken = default) => DeleteAsync(CheckTKeyAndReturnIdEntity(id), cancellationToken);
-//#endif
-//    }
+    //#if net40
+    //#else
+    //        public Task<TEntity> GetAsync(TKey id, CancellationToken cancellationToken = default) => Select.WhereDynamic(CheckTKeyAndReturnIdEntity(id)).ToOneAsync(cancellationToken);
+    //        public Task<TEntity> FindAsync(TKey id, CancellationToken cancellationToken = default) => Select.WhereDynamic(CheckTKeyAndReturnIdEntity(id)).ToOneAsync(cancellationToken);
+    //        public Task<int> DeleteAsync(TKey id, CancellationToken cancellationToken = default) => DeleteAsync(CheckTKeyAndReturnIdEntity(id), cancellationToken);
+    //#endif
+    //    }
 }
+
+#endif

@@ -7,9 +7,11 @@ namespace FreeSql.Cloud.Abstract
 {
     public abstract class FreeSqlCloudBase
     {
+#if !net40
         internal abstract string GetDBKey();
-        public abstract IFreeSql Use(DBKeyString dbkey);
         public abstract IFreeSql Change(DBKeyString dbkey);
+#endif
+        public abstract IFreeSql Use(DBKeyString dbkey);
     }
 
     public class DBKeyString
@@ -56,11 +58,15 @@ namespace FreeSql.Cloud.Abstract
 				_rawValueChanged = true;
 				_rawValue = value;
 			}
-		}
-#if net40
-        ThreadLocal<ValueHolder> _asyncLocal = new ThreadLocal<ValueHolder>();
-#else
+        }
+#if !net40
         AsyncLocal<ValueHolder> _asyncLocal = new AsyncLocal<ValueHolder>();
+#else
+        AsyncLocalFake<ValueHolder> _asyncLocal = new AsyncLocalFake<ValueHolder>();
+        class AsyncLocalFake<T2>
+        {
+            public T2 Value { get; set; }
+        }
 #endif
     }
 }

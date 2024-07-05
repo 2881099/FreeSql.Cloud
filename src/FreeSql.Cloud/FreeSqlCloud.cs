@@ -12,9 +12,11 @@ namespace FreeSql
 	//public class FreeSqlCloud : FreeSqlCloud<string> { }
 	public partial class FreeSqlCloud<TDBKey> : FreeSqlCloudBase, IFreeSql
     {
+#if !net40
         internal override string GetDBKey() => _dbkey.ToInvariantCultureToString();
-        public override IFreeSql Use(DBKeyString dbkey) => Use((TDBKey)typeof(TDBKey).FromObject(dbkey?.ToString()));
         public override IFreeSql Change(DBKeyString dbkey) => Change((TDBKey)typeof(TDBKey).FromObject(dbkey?.ToString()));
+#endif
+        public override IFreeSql Use(DBKeyString dbkey) => Use((TDBKey)typeof(TDBKey).FromObject(dbkey?.ToString()));
 
         public string DistributeKey { get; }
         public Action<string> DistributeTrace;
@@ -79,13 +81,15 @@ namespace FreeSql
             if (string.IsNullOrWhiteSpace(DistributeKey)) DistributeKey = null;
             _ib = new IdleBus<TDBKey, IFreeSql>(TimeSpan.FromMinutes(3));
             _ib.Notice += (_, __) => { };
+
             _dbkeyCurrent = new AsyncLocalAccessor<TDBKey>(() =>
             {
                 if (typeof(TDBKey) == typeof(string) && _dbkeyMaster == null) return (TDBKey)typeof(TDBKey).FromObject("");
                 return _dbkeyMaster;
             });
-		}
+        }
 
+#if !net40
         /// <summary>
         /// 切换数据库（同一线程，或异步await 后续操作有效）<para></para>
         /// 注意：单次有效请使用 Use(dbkey)
@@ -99,6 +103,7 @@ namespace FreeSql
             _dbkeyCurrent.Value = dbkey;
             return new FreeSqlCloundSnapshot<TDBKey>(this, dbkey, () => _dbkeyCurrent.Value = oldkey);
         }
+#endif
         /// <summary>
         /// 临时使用数据库（单次有效）
         /// </summary>

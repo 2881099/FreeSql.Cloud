@@ -6,6 +6,7 @@ using System.Threading;
 
 namespace FreeSql
 {
+#if !net40
     class UnitOfWorkManagerCloud
     {
         public FreeSqlCloudBase Cloud { get; }
@@ -44,4 +45,5 @@ namespace FreeSql
             return uowm;
         }
     }
+#endif
 }
