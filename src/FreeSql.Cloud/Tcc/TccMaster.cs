@@ -224,9 +224,9 @@ namespace FreeSql.Cloud.Tcc
                             SetTccState(units[idx], unitInfo);
                         var ormMaster = cloud._ormMaster;
 #if net40
-                        using (var conn = cloud.Ado.MasterPool.Get())
+                        using (var conn = ormMaster.Ado.MasterPool.Get())
 #else
-                        using (var conn = await cloud.Ado.MasterPool.GetAsync())
+                        using (var conn = await ormMaster.Ado.MasterPool.GetAsync())
 #endif
                         {
                             var tran = conn.Value.BeginTransaction();
