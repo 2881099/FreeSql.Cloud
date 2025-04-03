@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<TargetFrameworks>netstandard20;net461;net40</TargetFrameworks>
-		<Version>1.9.1</Version>
+		<Version>2.0.0</Version>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<Authors>FreeSql;ncc;YeXiangQin</Authors>
 		<Description>提供跨数据库访问，分布式事务TCC、SAGA解决方案，支持 .NET Core 2.1+, .NET Framework 4.0+.</Description>
@@ -26,10 +26,14 @@
 	</ItemGroup>
 	
 	<ItemGroup>
-		<PackageReference Include="FreeSql.DbContext" Version="3.2.808" />
-		<PackageReference Include="FreeScheduler" Version="2.0.18" />
+		<PackageReference Include="FreeScheduler" Version="2.0.33" />
+		<PackageReference Include="FreeSql.DbContext" Version="3.5.201" />
 		<PackageReference Include="IdleBus" Version="1.5.3" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+	</ItemGroup>
+	
+	<ItemGroup>
+	  <ProjectReference Include="..\..\..\FreeScheduler\FreeScheduler\FreeScheduler.csproj" />
 	</ItemGroup>
 	
 	<PropertyGroup Condition="'$(TargetFramework)' == 'net40'">

@@ -130,7 +130,7 @@ namespace FreeSql
 
         public IFreeSql Orm => CurrentRepository.Orm;
         public Type EntityType => CurrentRepository.EntityType;
-        public IDataFilter<TEntity> DataFilter => CurrentRepository.DataFilter;
+        public RepositoryDataFilter DataFilter => CurrentRepository.DataFilter;
         public ISelect<TEntity> Select => CurrentRepository.Select;
         public IUpdate<TEntity> UpdateDiy => CurrentRepository.UpdateDiy;
         public ISelect<TEntity> Where(Expression<Func<TEntity, bool>> exp) => CurrentRepository.Where(exp);
